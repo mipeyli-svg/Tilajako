@@ -2,8 +2,8 @@
 <html lang="fi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tilajako: Mypi, Hanna, Päivi, Jenni, Tuomas</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=0.5, maximum-scale=3.0, user-scalable=yes">
+    <title>Tilajako</title>
     <style>
         :root {
             --vari-mypi:   #bfdbfe;
@@ -318,7 +318,7 @@
 
         @media (min-width: 900px) {
             .yhteenveto-wrap {
-                grid-template-columns: 1fr 1fr;
+                grid-template-columns: 1fr 1fr 1fr;
             }
         }
 
@@ -385,7 +385,7 @@
 
             .viikko-grid {
                 display: grid;
-                grid-template-columns: repeat(5, minmax(135px, 1fr));
+                grid-template-columns: repeat(5, minmax(115px, 1fr));
                 gap: 6px;
                 overflow-x: auto;
                 padding-bottom: 0;
@@ -393,7 +393,7 @@
             }
 
             .paiva-sarake {
-                min-width: 135px;
+                min-width: 115px;
                 padding: 6px;
                 border-radius: 6px;
             }
@@ -456,14 +456,7 @@
 
         <div class="suodatin-rivi">
             <label for="ope-suodatin">Näytä:</label>
-            <select id="ope-suodatin">
-                <option value="Kaikki">Kaikki opettajat</option>
-                <option value="Mypi">Vain Mypi</option>
-                <option value="Hanna">Vain Hanna</option>
-                <option value="Päivi">Vain Päivi</option>
-                <option value="Jenni">Vain Jenni</option>
-                <option value="Tuomas">Vain Tuomas</option>
-            </select>
+            <select id="ope-suodatin"></select>
         </div>
 
         <div class="ohje-teksti">Käännä puhelin vaakatasoon nähdäksesi koko viikon.</div>
@@ -476,33 +469,53 @@
     <script>
         const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRNc9D23NHyoU0H5tLM86bd5w-7E318BH0RLa3SLcgy1xmkENyDY6yCliA64Iyagsff6SYAFAwlQKfp/pub?output=csv';
 
-        const opettajaJarjestys = ["Mypi", "Hanna", "Päivi", "Jenni", "Tuomas"];
+        const ASETUKSET = {
+            opettajat: ["Mypi", "Hanna", "Päivi", "Jenni", "Tuomas"],
+
+            varit: {
+                "Mypi":   "var(--vari-mypi)",
+                "Hanna":  "var(--vari-hanna)",
+                "Päivi":  "var(--vari-paivi)",
+                "Jenni":  "var(--vari-jenni)",
+                "Tuomas": "var(--vari-tuomas)"
+            },
+
+            aloitusViikko: 11,
+
+            lahtoTilat: {
+                2: {
+                    "Mypi": "Yläsali",
+                    "Hanna": "Alasali",
+                    "Päivi": "Alasali",
+                    "Jenni": "Yläsali",
+                    "Tuomas": "Yläsali"
+                },
+                3: {
+                    "Mypi": "Muualla",
+                    "Hanna": "Alasali",
+                    "Päivi": "Yläsali",
+                    "Jenni": "Yläsali",
+                    "Tuomas": "Muualla"
+                },
+                4: {
+                    "Mypi": "Muualla 1",
+                    "Hanna": "Alasali",
+                    "Päivi": "Alasali",
+                    "Jenni": "Yläsali",
+                    "Tuomas": "Muualla 2"
+                }
+            }
+        };
+
+        const opettajaJarjestys = ASETUKSET.opettajat;
         const viikonpaivat = ["Maanantai", "Tiistai", "Keskiviikko", "Torstai", "Perjantai"];
+        const aloitusViikko = ASETUKSET.aloitusViikko;
 
         const tilatKierroksittain = {
             1: ["Yläsali"],
             2: ["Yläsali", "Alasali"],
             3: ["Yläsali", "Alasali", "Muualla"],
             4: ["Yläsali", "Alasali", "Muualla 1", "Muualla 2"]
-        };
-
-        const aloitusViikko = 11;
-
-        const perusTilaViikolle11 = {
-            3: {
-                "Mypi": "Muualla",
-                "Hanna": "Alasali",
-                "Jenni": "Yläsali",
-                "Päivi": "Yläsali",
-                "Tuomas": "Muualla"
-            },
-            4: {
-                "Mypi": "Muualla 1",
-                "Hanna": "Alasali",
-                "Jenni": "Yläsali",
-                "Päivi": "Alasali",
-                "Tuomas": "Muualla 2"
-            }
         };
 
         let valittuViikko = null;
@@ -518,14 +531,10 @@
 
         function haeVari(nimi) {
             const puhdas = (nimi || "").trim().toLowerCase();
-            const varit = {
-                "mypi": "var(--vari-mypi)",
-                "hanna": "var(--vari-hanna)",
-                "päivi": "var(--vari-paivi)",
-                "jenni": "var(--vari-jenni)",
-                "tuomas": "var(--vari-tuomas)"
-            };
-            return varit[puhdas] || "var(--vari-tyhja)";
+            const variAvain = Object.keys(ASETUKSET.varit).find(
+                nimiAsetuksissa => nimiAsetuksissa.toLowerCase() === puhdas
+            );
+            return variAvain ? ASETUKSET.varit[variAvain] : "var(--vari-tyhja)";
         }
 
         function normalisoiAika(aika) {
@@ -576,7 +585,7 @@
 
         function haeOpettajanViikonTila(opettaja, kierto, viikkoNumero) {
             const tilat = tilatKierroksittain[kierto];
-            const lahtoTila = perusTilaViikolle11?.[kierto]?.[opettaja];
+            const lahtoTila = ASETUKSET.lahtoTilat?.[kierto]?.[opettaja];
 
             if (!tilat || !lahtoTila) return null;
 
@@ -672,6 +681,7 @@
 
                 const yhteenvetoDiv = document.getElementById('viikkoyhteenveto');
                 yhteenvetoDiv.innerHTML = '';
+                yhteenvetoDiv.appendChild(teeYhteenvetoKortti('Tämän viikon 2-kierto', 2, viikkoNumero));
                 yhteenvetoDiv.appendChild(teeYhteenvetoKortti('Tämän viikon 3-kierto', 3, viikkoNumero));
                 yhteenvetoDiv.appendChild(teeYhteenvetoKortti('Tämän viikon 4-kierto', 4, viikkoNumero));
 
@@ -750,7 +760,7 @@
                             } else if (onkoVapaa) {
                                 opettajanTila = "Sopivat keskenään";
                                 lisaluokka = "tila-vapaa";
-                            } else if (kiertoTyyppi === 3 || kiertoTyyppi === 4) {
+                            } else if (kiertoTyyppi === 2 || kiertoTyyppi === 3 || kiertoTyyppi === 4) {
                                 opettajanTila = haeOpettajanViikonTila(tunti.ope, kiertoTyyppi, viikkoNumero) || "—";
                             } else {
                                 const tilat = tilatKierroksittain[kiertoTyyppi] || ["—"];
@@ -816,6 +826,16 @@
 
         window.onload = () => {
             valittuViikko = haeViikkonumero(new Date());
+
+            const select = document.getElementById('ope-suodatin');
+            select.innerHTML = '<option value="Kaikki">Kaikki opettajat</option>';
+
+            ASETUKSET.opettajat.forEach(ope => {
+                const option = document.createElement('option');
+                option.value = ope;
+                option.textContent = `Vain ${ope}`;
+                select.appendChild(option);
+            });
 
             document.getElementById('edellinen-viikko').addEventListener('click', () => {
                 valittuViikko--;
