@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tilajako: Mypi, Hanna, Päivi, Jenni, Tuomas</title>
+    <style>
+        :root {
+            --vari-mypi:   #bfdbfe;
+            --vari-hanna:  #bbf7d0;
+            --vari-paivi:  #fef08a;
+            --vari-jenni:  #fbcfe8;
+            --vari-tuomas: #e9d5ff;
+            --vari-tyhja:  #f3f4f6;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            background-color: #f3f4f6;
+            color: #1f2937;
+            margin: 0;
+            padding: 15px;
+            padding-bottom: 50px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 1.4rem;
+        }
+
+        .viikko-ohjaus {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+
+        .viikko-ohjaus button,
+        .suodatin-rivi select {
+            border: none;
+            background: #4f46e5;
+            color: white;
+            padding: 8px 14px;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        .viikko-ohjaus button {
+            cursor: pointer;
+        }
+
+        .viikko-ohjaus button:hover {
+            background: #4338ca;
+        }
+
+        .suodatin-rivi {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .suodatin-rivi label {
+            font-size: 0.9rem;
+            color: #4b5563;
+            font-weight: 600;
+        }
+
+        .suodatin-rivi select {
+            cursor: pointer;
+            appearance: none;
+        }
+
+        .viikko-info {
+            color: #4f46e5;
+            font-weight: bold;
+            font-size: 1.2rem;
+            margin-top: 5px;
+            min-width: 110px;
+        }
+
+        .ohje-teksti {
+            font-size: 0.8rem;
+            color: #6b7280;
+            margin-top: 8px;
+        }
+
+        .yhteenveto-wrap {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 14px;
+            margin-bottom: 18px;
+        }
+
+        .yhteenveto-laatikko {
+            background: white;
+            border-radius: 12px;
+            padding: 14px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .yhteenveto-otsikko {
+            font-weight: 800;
+            color: #374151;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+
+        .yhteenveto-rivit {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 8px;
+        }
+
+        .yhteenveto-kortti {
+            border-radius: 8px;
+            padding: 8px 10px;
+            font-size: 0.9rem;
+            line-height: 1.35;
+        }
+
+        .yhteenveto-kortti .nimi {
+            font-weight: 800;
+            display: block;
+        }
+
+        .yhteenveto-kortti .tila {
+            display: block;
+            margin-top: 2px;
+            font-weight: 600;
+        }
+
+        .paiva-laatikko {
+            background: white;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .paiva-otsikko {
+            background-color: #374151;
+            color: white;
+            padding: 12px 15px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .tuntiblokki {
+            padding: 15px;
+            border-bottom: 2px dashed #e5e7eb;
+        }
+
+        .tuntiblokki:last-child {
+            border-bottom: none;
+        }
+
+        .kello-otsikko {
+            font-weight: 800;
+            color: #374151;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .kello-otsikko span {
+            background: #e5e7eb;
+            font-size: 0.75rem;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-weight: normal;
+        }
+
+        .tunti-kortti {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+            gap: 12px;
+        }
+
+        .vasen-puoli {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .ope-nimi {
+            font-weight: bold;
+            font-size: 1.05rem;
+        }
+
+        .ryhma-nimi {
+            font-size: 0.8rem;
+            color: #4b5563;
+        }
+
+        .oikea-puoli {
+            text-align: right;
+        }
+
+        .huone-nimi {
+            font-weight: 800;
+            font-size: 1.05rem;
+            text-transform: uppercase;
+        }
+
+        .aika-tarkenne {
+            font-size: 0.75rem;
+            color: #4b5563;
+        }
+
+        .tila-poikkeus {
+            color: #b91c1c;
+        }
+
+        .tila-vapaa {
+            color: #047857;
+            font-size: 0.9rem !important;
+        }
+
+        .viikko-grid {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+            align-items: flex-start;
+        }
+
+        .paiva-sarake {
+            flex: 1;
+            min-width: 170px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            padding: 10px;
+        }
+
+        .sarake-otsikko {
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #374151;
+            color: #374151;
+        }
+
+        .grid-blokki {
+            margin-bottom: 15px;
+        }
+
+        .grid-kello {
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: #4b5563;
+            margin-bottom: 8px;
+            border-bottom: 1px dashed #e5e7eb;
+            padding-bottom: 4px;
+        }
+
+        .grid-kortti {
+            padding: 8px;
+            border-radius: 6px;
+            margin-bottom: 6px;
+            font-size: 0.85rem;
+            line-height: 1.3;
+        }
+
+        .grid-ope {
+            font-weight: bold;
+            font-size: 0.95rem;
+        }
+
+        .grid-tila {
+            float: right;
+            font-weight: 800;
+            font-size: 0.8rem;
+        }
+
+        .grid-aika {
+            font-size: 0.7rem;
+            color: #4b5563;
+            display: block;
+            margin-top: 3px;
+            clear: both;
+        }
+
+        .tyhja-teksti {
+            background: white;
+            padding: 14px;
+            border-radius: 12px;
+            color: #6b7280;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        @media (min-width: 900px) {
+            .yhteenveto-wrap {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (orientation: portrait) {
+            #landscape-view { display: none; }
+            #portrait-view { display: block; }
+        }
+
+        @media (orientation: landscape) {
+            #landscape-view { display: block; }
+            #portrait-view { display: none; }
+        }
+
+        @media (max-width: 950px) and (orientation: landscape) {
+            body {
+                padding: 8px;
+                padding-bottom: 16px;
+            }
+
+            .header {
+                padding: 10px;
+                margin-bottom: 8px;
+                border-radius: 10px;
+            }
+
+            .header h1 {
+                font-size: 1rem;
+            }
+
+            .viikko-ohjaus {
+                gap: 6px;
+                margin-top: 6px;
+            }
+
+            .viikko-ohjaus button,
+            .suodatin-rivi select {
+                padding: 6px 10px;
+                border-radius: 8px;
+                font-size: 0.78rem;
+            }
+
+            .viikko-info {
+                font-size: 0.92rem;
+                min-width: auto;
+                margin-top: 0;
+            }
+
+            .suodatin-rivi {
+                gap: 6px;
+                margin-top: 6px;
+            }
+
+            .suodatin-rivi label {
+                font-size: 0.78rem;
+            }
+
+            .ohje-teksti {
+                display: none;
+            }
+
+            .yhteenveto-wrap {
+                display: none;
+            }
+
+            .viikko-grid {
+                display: grid;
+                grid-template-columns: repeat(5, minmax(135px, 1fr));
+                gap: 6px;
+                overflow-x: auto;
+                padding-bottom: 0;
+                align-items: start;
+            }
+
+            .paiva-sarake {
+                min-width: 135px;
+                padding: 6px;
+                border-radius: 6px;
+            }
+
+            .sarake-otsikko {
+                margin-bottom: 8px;
+                padding-bottom: 5px;
+                font-size: 0.82rem;
+            }
+
+            .grid-blokki {
+                margin-bottom: 8px;
+            }
+
+            .grid-kello {
+                font-size: 0.7rem;
+                margin-bottom: 4px;
+                padding-bottom: 2px;
+            }
+
+            .grid-kortti {
+                padding: 5px 6px;
+                margin-bottom: 4px;
+                border-radius: 5px;
+                font-size: 0.7rem;
+                line-height: 1.12;
+            }
+
+            .grid-ope {
+                display: block;
+                font-size: 0.74rem;
+                margin-bottom: 2px;
+            }
+
+            .grid-tila {
+                float: none;
+                display: block;
+                font-size: 0.7rem;
+                margin-bottom: 2px;
+            }
+
+            .grid-aika {
+                font-size: 0.62rem;
+                margin-top: 2px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Opettajien Tilajako</h1>
+
+        <div class="viikko-ohjaus">
+            <button id="edellinen-viikko">← Edellinen</button>
+            <div class="viikko-info" id="viikko-naytto">Ladataan tietoja Sheetsistä...</div>
+            <button id="nykyinen-viikko">Nykyinen viikko</button>
+            <button id="seuraava-viikko">Seuraava →</button>
+        </div>
+
+        <div class="suodatin-rivi">
+            <label for="ope-suodatin">Näytä:</label>
+            <select id="ope-suodatin">
+                <option value="Kaikki">Kaikki opettajat</option>
+                <option value="Mypi">Vain Mypi</option>
+                <option value="Hanna">Vain Hanna</option>
+                <option value="Päivi">Vain Päivi</option>
+                <option value="Jenni">Vain Jenni</option>
+                <option value="Tuomas">Vain Tuomas</option>
+            </select>
+        </div>
+
+        <div class="ohje-teksti">Käännä puhelin vaakatasoon nähdäksesi koko viikon.</div>
+    </div>
+
+    <div id="viikkoyhteenveto" class="yhteenveto-wrap"></div>
+    <div id="portrait-view"></div>
+    <div id="landscape-view"></div>
+
+    <script>
+        const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRNc9D23NHyoU0H5tLM86bd5w-7E318BH0RLa3SLcgy1xmkENyDY6yCliA64Iyagsff6SYAFAwlQKfp/pub?output=csv';
+
+        const opettajaJarjestys = ["Mypi", "Hanna", "Päivi", "Jenni", "Tuomas"];
+        const viikonpaivat = ["Maanantai", "Tiistai", "Keskiviikko", "Torstai", "Perjantai"];
+
+        const tilatKierroksittain = {
+            1: ["Yläsali"],
+            2: ["Yläsali", "Alasali"],
+            3: ["Yläsali", "Alasali", "Muualla"],
+            4: ["Yläsali", "Alasali", "Muualla 1", "Muualla 2"]
+        };
+
+        const aloitusViikko = 11;
+
+        const perusTilaViikolle11 = {
+            3: {
+                "Mypi": "Muualla",
+                "Hanna": "Alasali",
+                "Jenni": "Yläsali",
+                "Päivi": "Yläsali",
+                "Tuomas": "Muualla"
+            },
+            4: {
+                "Mypi": "Muualla 1",
+                "Hanna": "Alasali",
+                "Jenni": "Yläsali",
+                "Päivi": "Alasali",
+                "Tuomas": "Muualla 2"
+            }
+        };
+
+        let valittuViikko = null;
+        let csvCache = "";
+        let valittuOpettaja = "Kaikki";
+
+        function haeViikkonumero(d) {
+            d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+            d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+        }
+
+        function haeVari(nimi) {
+            const puhdas = (nimi || "").trim().toLowerCase();
+            const varit = {
+                "mypi": "var(--vari-mypi)",
+                "hanna": "var(--vari-hanna)",
+                "päivi": "var(--vari-paivi)",
+                "jenni": "var(--vari-jenni)",
+                "tuomas": "var(--vari-tuomas)"
+            };
+            return varit[puhdas] || "var(--vari-tyhja)";
+        }
+
+        function normalisoiAika(aika) {
+            if (!aika) return "";
+            return String(aika).trim().replace('.', ':');
+        }
+
+        function aikaMinuuteiksi(aika) {
+            if (!aika) return 0;
+            const siistitty = String(aika).trim().replace('.', ':');
+            if (!siistitty.includes(':')) return 0;
+            const [h, m] = siistitty.split(':').map(Number);
+            if (isNaN(h) || isNaN(m)) return 0;
+            return h * 60 + m;
+        }
+
+        function csvRiviOsiksi(rivi) {
+            const tulos = [];
+            let kentta = "";
+            let lainaus = false;
+
+            for (let i = 0; i < rivi.length; i++) {
+                const merkki = rivi[i];
+                const seuraava = rivi[i + 1];
+
+                if (merkki === '"') {
+                    if (lainaus && seuraava === '"') {
+                        kentta += '"';
+                        i++;
+                    } else {
+                        lainaus = !lainaus;
+                    }
+                } else if (merkki === ',' && !lainaus) {
+                    tulos.push(kentta);
+                    kentta = "";
+                } else {
+                    kentta += merkki;
+                }
+            }
+
+            tulos.push(kentta);
+            return tulos.map(x => x.trim());
+        }
+
+        function viikkoSiirtyma(viikkoNumero, kiertoPituus) {
+            return ((viikkoNumero - aloitusViikko) % kiertoPituus + kiertoPituus) % kiertoPituus;
+        }
+
+        function haeOpettajanViikonTila(opettaja, kierto, viikkoNumero) {
+            const tilat = tilatKierroksittain[kierto];
+            const lahtoTila = perusTilaViikolle11?.[kierto]?.[opettaja];
+
+            if (!tilat || !lahtoTila) return null;
+
+            const lahtoIndeksi = tilat.indexOf(lahtoTila);
+            if (lahtoIndeksi === -1) return null;
+
+            const siirtyma = viikkoSiirtyma(viikkoNumero, kierto);
+            const indeksi = (lahtoIndeksi + siirtyma) % tilat.length;
+
+            return tilat[indeksi];
+        }
+
+        function naytetaankoOpettaja(ope) {
+            return valittuOpettaja === "Kaikki" || ope === valittuOpettaja;
+        }
+
+        function teeYhteenvetoKortti(otsikko, kierto, viikkoNumero) {
+            const wrap = document.createElement('div');
+            wrap.className = 'yhteenveto-laatikko';
+
+            const title = document.createElement('div');
+            title.className = 'yhteenveto-otsikko';
+            title.textContent = otsikko;
+            wrap.appendChild(title);
+
+            const rivit = document.createElement('div');
+            rivit.className = 'yhteenveto-rivit';
+
+            const opettajat = opettajaJarjestys.filter(ope => naytetaankoOpettaja(ope));
+
+            opettajat.forEach(ope => {
+                const card = document.createElement('div');
+                card.className = 'yhteenveto-kortti';
+                card.style.backgroundColor = haeVari(ope);
+
+                const nimi = document.createElement('span');
+                nimi.className = 'nimi';
+                nimi.textContent = ope;
+
+                const tila = document.createElement('span');
+                tila.className = 'tila';
+                tila.textContent = haeOpettajanViikonTila(ope, kierto, viikkoNumero) || '—';
+
+                card.appendChild(nimi);
+                card.appendChild(tila);
+                rivit.appendChild(card);
+            });
+
+            wrap.appendChild(rivit);
+            return wrap;
+        }
+
+        async function suorita(viikkoNumero = null) {
+            try {
+                if (!csvCache) {
+                    const response = await fetch(sheetUrl + '&t=' + Date.now());
+                    csvCache = await response.text();
+                }
+
+                const csvText = csvCache;
+
+                if (viikkoNumero === null) {
+                    viikkoNumero = haeViikkonumero(new Date());
+                }
+
+                document.getElementById('viikko-naytto').textContent = `Viikko ${viikkoNumero}`;
+
+                const rivit = csvText.split(/\r?\n/).slice(1).filter(r => r.trim() !== "");
+                const tapahtumat = [];
+
+                rivit.forEach(rivi => {
+                    const osat = csvRiviOsiksi(rivi);
+
+                    if (osat.length >= 7) {
+                        tapahtumat.push({
+                            ope: osat[0] ? osat[0].trim() : "",
+                            paiva: osat[1] ? osat[1].trim() : "",
+                            alku: osat[2] ? normalisoiAika(osat[2]) : "",
+                            loppu: osat[3] ? normalisoiAika(osat[3]) : "",
+                            ryhma: osat[4] ? osat[4].trim() : "",
+                            kierto: parseInt(osat[5] ? osat[5].trim() : "0", 10),
+                            poikkeus: osat[6] ? osat[6].trim() : ""
+                        });
+                    }
+                });
+
+                const paivat = {};
+                tapahtumat.forEach(t => {
+                    if (!naytetaankoOpettaja(t.ope)) return;
+                    if (!paivat[t.paiva]) paivat[t.paiva] = [];
+                    paivat[t.paiva].push(t);
+                });
+
+                const yhteenvetoDiv = document.getElementById('viikkoyhteenveto');
+                yhteenvetoDiv.innerHTML = '';
+                yhteenvetoDiv.appendChild(teeYhteenvetoKortti('Tämän viikon 3-kierto', 3, viikkoNumero));
+                yhteenvetoDiv.appendChild(teeYhteenvetoKortti('Tämän viikon 4-kierto', 4, viikkoNumero));
+
+                const portraitDiv = document.getElementById('portrait-view');
+                const landscapeDiv = document.getElementById('landscape-view');
+                portraitDiv.innerHTML = '';
+                landscapeDiv.innerHTML = '';
+
+                const gridContainer = document.createElement('div');
+                gridContainer.className = 'viikko-grid';
+
+                let loytyiSisaltoa = false;
+
+                viikonpaivat.forEach(paiva => {
+                    const paivanTunnit = paivat[paiva];
+                    if (!paivanTunnit || paivanTunnit.length === 0) return;
+
+                    loytyiSisaltoa = true;
+
+                    paivanTunnit.sort((a, b) => {
+                        const aikaEro = aikaMinuuteiksi(a.alku) - aikaMinuuteiksi(b.alku);
+                        if (aikaEro !== 0) return aikaEro;
+                        if ((a.kierto || 0) !== (b.kierto || 0)) return (a.kierto || 0) - (b.kierto || 0);
+                        return opettajaJarjestys.indexOf(a.ope) - opettajaJarjestys.indexOf(b.ope);
+                    });
+
+                    const blokit = {};
+                    paivanTunnit.forEach(t => {
+                        const avain = `${t.alku}|${t.loppu}|${t.kierto > 0 ? t.kierto : "vapaa"}`;
+                        if (!blokit[avain]) blokit[avain] = [];
+                        blokit[avain].push(t);
+                    });
+
+                    const lajitellutAvaimet = Object.keys(blokit).sort((a, b) => {
+                        const aikaA = a.split('|')[0];
+                        const aikaB = b.split('|')[0];
+                        return aikaMinuuteiksi(aikaA) - aikaMinuuteiksi(aikaB);
+                    });
+
+                    const paivaDivPysty = document.createElement('div');
+                    paivaDivPysty.className = 'paiva-laatikko';
+                    paivaDivPysty.innerHTML = `<div class="paiva-otsikko">${paiva}</div>`;
+
+                    const paivaSarake = document.createElement('div');
+                    paivaSarake.className = 'paiva-sarake';
+                    paivaSarake.innerHTML = `<div class="sarake-otsikko">${paiva}</div>`;
+
+                    lajitellutAvaimet.forEach(avain => {
+                        const blokkiTunnit = blokit[avain];
+                        const eka = blokkiTunnit[0];
+
+                        const kiertoTyyppi = eka.kierto;
+                        const onkoVapaa = !kiertoTyyppi || isNaN(kiertoTyyppi) || kiertoTyyppi === 0;
+                        const kiertoTeksti = onkoVapaa ? "Sopimuksen mukaan" : `${kiertoTyyppi}-kierto`;
+                        const otsikkoAika = `${eka.alku} - ${eka.loppu}`;
+
+                        blokkiTunnit.sort((a, b) =>
+                            opettajaJarjestys.indexOf(a.ope) - opettajaJarjestys.indexOf(b.ope)
+                        );
+
+                        const blokkiDivPysty = document.createElement('div');
+                        blokkiDivPysty.className = 'tuntiblokki';
+                        blokkiDivPysty.innerHTML = `<div class="kello-otsikko">${otsikkoAika} <span>${kiertoTeksti}</span></div>`;
+
+                        const blokkiDivVaaka = document.createElement('div');
+                        blokkiDivVaaka.className = 'grid-blokki';
+                        blokkiDivVaaka.innerHTML = `<div class="grid-kello">${otsikkoAika} (${onkoVapaa ? 'Vapaa' : kiertoTyyppi + '-k'})</div>`;
+
+                        blokkiTunnit.forEach(tunti => {
+                            let opettajanTila = "";
+                            let lisaluokka = "";
+
+                            if (tunti.poikkeus) {
+                                opettajanTila = tunti.poikkeus;
+                                lisaluokka = "tila-poikkeus";
+                            } else if (onkoVapaa) {
+                                opettajanTila = "Sopivat keskenään";
+                                lisaluokka = "tila-vapaa";
+                            } else if (kiertoTyyppi === 3 || kiertoTyyppi === 4) {
+                                opettajanTila = haeOpettajanViikonTila(tunti.ope, kiertoTyyppi, viikkoNumero) || "—";
+                            } else {
+                                const tilat = tilatKierroksittain[kiertoTyyppi] || ["—"];
+                                const indeksi = opettajaJarjestys.indexOf(tunti.ope) % tilat.length;
+                                opettajanTila = tilat[indeksi] || "—";
+                            }
+
+                            const korttiPysty = document.createElement('div');
+                            korttiPysty.className = 'tunti-kortti';
+                            korttiPysty.style.backgroundColor = haeVari(tunti.ope);
+                            korttiPysty.innerHTML = `
+                                <div class="vasen-puoli">
+                                    <span class="ope-nimi">${tunti.ope}</span>
+                                    <span class="ryhma-nimi">Ryhmä: ${tunti.ryhma}</span>
+                                </div>
+                                <div class="oikea-puoli">
+                                    <span class="huone-nimi ${lisaluokka}">${opettajanTila}</span><br>
+                                    <span class="aika-tarkenne">${tunti.alku} - ${tunti.loppu}</span>
+                                </div>
+                            `;
+                            blokkiDivPysty.appendChild(korttiPysty);
+
+                            const korttiVaaka = document.createElement('div');
+                            korttiVaaka.className = 'grid-kortti';
+                            korttiVaaka.style.backgroundColor = haeVari(tunti.ope);
+                            korttiVaaka.innerHTML = `
+                                <span class="grid-ope">${tunti.ope}</span>
+                                <span class="grid-tila ${lisaluokka}">${opettajanTila}</span>
+                                <span class="grid-aika">${tunti.alku}-${tunti.loppu}</span>
+                            `;
+                            blokkiDivVaaka.appendChild(korttiVaaka);
+                        });
+
+                        paivaDivPysty.appendChild(blokkiDivPysty);
+                        paivaSarake.appendChild(blokkiDivVaaka);
+                    });
+
+                    portraitDiv.appendChild(paivaDivPysty);
+                    gridContainer.appendChild(paivaSarake);
+                });
+
+                if (loytyiSisaltoa) {
+                    landscapeDiv.appendChild(gridContainer);
+                } else {
+                    const tyhja1 = document.createElement('div');
+                    tyhja1.className = 'tyhja-teksti';
+                    tyhja1.textContent = 'Tälle valinnalle ei löytynyt tunteja.';
+
+                    const tyhja2 = document.createElement('div');
+                    tyhja2.className = 'tyhja-teksti';
+                    tyhja2.textContent = 'Tälle valinnalle ei löytynyt tunteja.';
+
+                    portraitDiv.appendChild(tyhja1);
+                    landscapeDiv.appendChild(tyhja2);
+                }
+
+            } catch (error) {
+                document.getElementById('viikko-naytto').innerHTML =
+                    `<span style="color:red;">Koodivirhe: ${error.message}</span>`;
+                console.error(error);
+            }
+        }
+
+        window.onload = () => {
+            valittuViikko = haeViikkonumero(new Date());
+
+            document.getElementById('edellinen-viikko').addEventListener('click', () => {
+                valittuViikko--;
+                suorita(valittuViikko);
+            });
+
+            document.getElementById('seuraava-viikko').addEventListener('click', () => {
+                valittuViikko++;
+                suorita(valittuViikko);
+            });
+
+            document.getElementById('nykyinen-viikko').addEventListener('click', () => {
+                valittuViikko = haeViikkonumero(new Date());
+                suorita(valittuViikko);
+            });
+
+            document.getElementById('ope-suodatin').addEventListener('change', (e) => {
+                valittuOpettaja = e.target.value;
+                suorita(valittuViikko);
+            });
+
+            suorita(valittuViikko);
+        };
+    </script>
+</body>
+</html>
