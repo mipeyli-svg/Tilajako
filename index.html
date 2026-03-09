@@ -644,9 +644,7 @@
 
         function haeVari(nimi) {
             const puhdas = (nimi || "").trim().toLowerCase();
-            const variAvain = Object.keys(ASETUKSET.varit).find(
-                nimiAsetuksissa => nimiAsetuksissa.toLowerCase() === puhdas
-            );
+            const variAvain = Object.keys(ASETUKSET.varit).find(n => n.toLowerCase() === puhdas);
             return variAvain ? ASETUKSET.varit[variAvain] : "var(--vari-tyhja)";
         }
 
@@ -706,9 +704,7 @@
             if (lahtoIndeksi === -1) return null;
 
             const siirtyma = viikkoSiirtyma(viikkoNumero, kierto);
-            const indeksi = (lahtoIndeksi + siirtyma) % tilat.length;
-
-            return tilat[indeksi];
+            return tilat[(lahtoIndeksi + siirtyma) % tilat.length];
         }
 
         function naytetaankoOpettaja(ope) {
@@ -744,22 +740,10 @@
         }
 
         function haeManuaalinenTila(viikkoNumero, tunti) {
-            const avain = teeOverrideAvain(
-                viikkoNumero,
-                tunti.paiva,
-                tunti.alku,
-                tunti.loppu,
-                tunti.ope
-            );
+            const avain = teeOverrideAvain(viikkoNumero, tunti.paiva, tunti.alku, tunti.loppu, tunti.ope);
 
             const match = overridesCache.find(item => {
-                const itemAvain = teeOverrideAvain(
-                    item.viikko,
-                    item.paiva,
-                    item.alku,
-                    item.loppu,
-                    item.ope
-                );
+                const itemAvain = teeOverrideAvain(item.viikko, item.paiva, item.alku, item.loppu, item.ope);
                 return itemAvain === avain && String(item.voimassa).toUpperCase() !== 'FALSE';
             });
 
@@ -793,7 +777,6 @@
             if (!aktiivinenMuokkaus) return;
 
             const uusiTila = document.getElementById('modal-uusi-tila').value.trim();
-
             if (!uusiTila) {
                 alert('Kirjoita paikka tai käytä "Palauta automaattiseksi".');
                 return;
@@ -912,10 +895,6 @@
                     csvCache = await response.text();
                 }
 
-                if (!appsScriptUrl) {
-                    throw new Error('Apps Script URL puuttuu.');
-                }
-
                 await haeTilamuutokset();
 
                 const csvText = csvCache;
@@ -1011,9 +990,7 @@
                         const kiertoTeksti = onkoVapaa ? "Sopimuksen mukaan" : `${kiertoTyyppi}-kierto`;
                         const otsikkoAika = `${eka.alku} - ${eka.loppu}`;
 
-                        blokkiTunnit.sort((a, b) =>
-                            opettajaJarjestys.indexOf(a.ope) - opettajaJarjestys.indexOf(b.ope)
-                        );
+                        blokkiTunnit.sort((a, b) => opettajaJarjestys.indexOf(a.ope) - opettajaJarjestys.indexOf(b.ope));
 
                         const blokkiDivPysty = document.createElement('div');
                         blokkiDivPysty.className = 'tuntiblokki';
