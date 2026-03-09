@@ -324,6 +324,85 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
 
+        .tila-modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(17, 24, 39, 0.45);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 16px;
+        }
+
+        .tila-modal {
+            width: min(460px, 100%);
+            background: white;
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+
+        .tila-modal-otsikko {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: #111827;
+            margin-bottom: 12px;
+        }
+
+        .tila-modal-rivi {
+            font-size: 0.95rem;
+            color: #374151;
+            margin-bottom: 6px;
+        }
+
+        .tila-modal-label {
+            display: block;
+            margin-top: 12px;
+            margin-bottom: 6px;
+            font-weight: 700;
+            color: #374151;
+        }
+
+        .tila-modal-input {
+            width: 100%;
+            box-sizing: border-box;
+            border: 1px solid #d1d5db;
+            border-radius: 10px;
+            padding: 10px 12px;
+            font-size: 1rem;
+        }
+
+        .tila-modal-napit {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 14px;
+        }
+
+        .tila-modal-napit button {
+            border: none;
+            border-radius: 10px;
+            padding: 9px 12px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .modal-paa {
+            background: #4f46e5;
+            color: white;
+        }
+
+        .modal-varoitus {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .modal-neutraali {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
         @media (min-width: 900px) {
             .yhteenveto-wrap {
                 grid-template-columns: 1fr 1fr 1fr;
@@ -480,8 +559,29 @@
     <div id="portrait-view"></div>
     <div id="landscape-view"></div>
 
+    <div id="tila-modal-backdrop" class="tila-modal-backdrop" style="display:none;">
+        <div class="tila-modal">
+            <div class="tila-modal-otsikko">Muuta paikkaa</div>
+
+            <div class="tila-modal-rivi"><strong>Opettaja:</strong> <span id="modal-ope"></span></div>
+            <div class="tila-modal-rivi"><strong>Päivä:</strong> <span id="modal-paiva"></span></div>
+            <div class="tila-modal-rivi"><strong>Aika:</strong> <span id="modal-aika"></span></div>
+            <div class="tila-modal-rivi"><strong>Viikko:</strong> <span id="modal-viikko"></span></div>
+
+            <label class="tila-modal-label" for="modal-uusi-tila">Paikka</label>
+            <input id="modal-uusi-tila" class="tila-modal-input" type="text" placeholder="Esim. Uimahalli">
+
+            <div class="tila-modal-napit">
+                <button id="modal-tallenna" class="modal-paa">Tallenna</button>
+                <button id="modal-palauta" class="modal-varoitus">Palauta automaattiseksi</button>
+                <button id="modal-peruuta" class="modal-neutraali">Peruuta</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRNc9D23NHyoU0H5tLM86bd5w-7E318BH0RLa3SLcgy1xmkENyDY6yCliA64Iyagsff6SYAFAwlQKfp/pub?output=csv';
+        const appsScriptUrl = 'LISAA_TAHAN_APPS_SCRIPT_WEB_APP_URL';
 
         const ASETUKSET = {
             opettajat: ["Mypi", "Hanna", "Päivi", "Jenni", "Tuomas"],
@@ -535,6 +635,8 @@
         let valittuViikko = null;
         let csvCache = "";
         let valittuOpettaja = "Kaikki";
+        let overridesCache = [];
+        let aktiivinenMuokkaus = null;
 
         function haeViikkonumero(d) {
             d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
@@ -616,6 +718,139 @@
             return valittuOpettaja === "Kaikki" || ope === valittuOpettaja;
         }
 
+        function teeOverrideAvain(viikkoNumero, paiva, alku, loppu, ope) {
+            return [String(viikkoNumero), String(paiva), String(alku), String(loppu), String(ope)]
+                .map(x => x.trim())
+                .join('|');
+        }
+
+        async function haeTilamuutokset() {
+            const response = await fetch(appsScriptUrl + '?action=getOverrides&t=' + Date.now(), {
+                method: 'GET',
+                cache: 'no-store'
+            });
+
+            const data = await response.json();
+
+            if (!data.ok) {
+                throw new Error(data.error || 'Tilamuutosten haku epäonnistui');
+            }
+
+            overridesCache = data.items || [];
+        }
+
+        function haeManuaalinenTila(viikkoNumero, tunti) {
+            const avain = teeOverrideAvain(
+                viikkoNumero,
+                tunti.paiva,
+                tunti.alku,
+                tunti.loppu,
+                tunti.ope
+            );
+
+            const match = overridesCache.find(item => {
+                const itemAvain = teeOverrideAvain(
+                    item.viikko,
+                    item.paiva,
+                    item.alku,
+                    item.loppu,
+                    item.ope
+                );
+                return itemAvain === avain && String(item.voimassa).toUpperCase() !== 'FALSE';
+            });
+
+            return match?.korvaava_tila || '';
+        }
+
+        function avaaTilaModal(tunti, viikkoNumero) {
+            aktiivinenMuokkaus = {
+                viikko: viikkoNumero,
+                paiva: tunti.paiva,
+                alku: tunti.alku,
+                loppu: tunti.loppu,
+                ope: tunti.ope
+            };
+
+            document.getElementById('modal-ope').textContent = tunti.ope;
+            document.getElementById('modal-paiva').textContent = tunti.paiva;
+            document.getElementById('modal-aika').textContent = `${tunti.alku} - ${tunti.loppu}`;
+            document.getElementById('modal-viikko').textContent = viikkoNumero;
+            document.getElementById('modal-uusi-tila').value = haeManuaalinenTila(viikkoNumero, tunti);
+            document.getElementById('tila-modal-backdrop').style.display = 'flex';
+        }
+
+        function suljeTilaModal() {
+            aktiivinenMuokkaus = null;
+            document.getElementById('tila-modal-backdrop').style.display = 'none';
+            document.getElementById('modal-uusi-tila').value = '';
+        }
+
+        async function tallennaTilaMuutos() {
+            if (!aktiivinenMuokkaus) return;
+
+            const uusiTila = document.getElementById('modal-uusi-tila').value.trim();
+
+            if (!uusiTila) {
+                alert('Kirjoita paikka tai käytä "Palauta automaattiseksi".');
+                return;
+            }
+
+            const payload = {
+                action: 'saveOverride',
+                viikko: aktiivinenMuokkaus.viikko,
+                paiva: aktiivinenMuokkaus.paiva,
+                alku: aktiivinenMuokkaus.alku,
+                loppu: aktiivinenMuokkaus.loppu,
+                ope: aktiivinenMuokkaus.ope,
+                korvaava_tila: uusiTila
+            };
+
+            const response = await fetch(appsScriptUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+
+            if (!data.ok) {
+                throw new Error(data.error || 'Tallennus epäonnistui');
+            }
+
+            await haeTilamuutokset();
+            suljeTilaModal();
+            await suorita(valittuViikko);
+        }
+
+        async function palautaAutomaattiseksi() {
+            if (!aktiivinenMuokkaus) return;
+
+            const payload = {
+                action: 'clearOverride',
+                viikko: aktiivinenMuokkaus.viikko,
+                paiva: aktiivinenMuokkaus.paiva,
+                alku: aktiivinenMuokkaus.alku,
+                loppu: aktiivinenMuokkaus.loppu,
+                ope: aktiivinenMuokkaus.ope
+            };
+
+            const response = await fetch(appsScriptUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+
+            if (!data.ok) {
+                throw new Error(data.error || 'Palautus epäonnistui');
+            }
+
+            await haeTilamuutokset();
+            suljeTilaModal();
+            await suorita(valittuViikko);
+        }
+
         function teeYhteenvetoKortti(otsikko, kierto, viikkoNumero) {
             const wrap = document.createElement('div');
             wrap.className = 'yhteenveto-laatikko';
@@ -658,6 +893,12 @@
                     const response = await fetch(sheetUrl + '&t=' + Date.now());
                     csvCache = await response.text();
                 }
+
+                if (!appsScriptUrl || appsScriptUrl.includes('LISAA_TAHAN_APPS_SCRIPT_WEB_APP_URL')) {
+                    throw new Error('Apps Script URL puuttuu. Lisää se koodiin muuttujaan appsScriptUrl.');
+                }
+
+                await haeTilamuutokset();
 
                 const csvText = csvCache;
 
@@ -768,7 +1009,12 @@
                             let opettajanTila = "";
                             let lisaluokka = "";
 
-                            if (tunti.poikkeus) {
+                            const manuaalinenTila = haeManuaalinenTila(viikkoNumero, tunti);
+
+                            if (manuaalinenTila) {
+                                opettajanTila = manuaalinenTila;
+                                lisaluokka = "tila-poikkeus";
+                            } else if (tunti.poikkeus) {
                                 opettajanTila = tunti.poikkeus;
                                 lisaluokka = "tila-poikkeus";
                             } else if (onkoVapaa) {
@@ -785,6 +1031,7 @@
                             const korttiPysty = document.createElement('div');
                             korttiPysty.className = 'tunti-kortti';
                             korttiPysty.style.backgroundColor = haeVari(tunti.ope);
+                            korttiPysty.style.cursor = 'pointer';
                             korttiPysty.innerHTML = `
                                 <div class="vasen-puoli">
                                     <span class="ope-nimi">${tunti.ope}</span>
@@ -795,17 +1042,20 @@
                                     <span class="aika-tarkenne">${tunti.alku} - ${tunti.loppu}</span>
                                 </div>
                             `;
+                            korttiPysty.addEventListener('click', () => avaaTilaModal(tunti, viikkoNumero));
                             blokkiDivPysty.appendChild(korttiPysty);
 
                             const korttiVaaka = document.createElement('div');
                             korttiVaaka.className = 'grid-kortti';
                             korttiVaaka.style.backgroundColor = haeVari(tunti.ope);
+                            korttiVaaka.style.cursor = 'pointer';
                             korttiVaaka.innerHTML = `
                                 <span class="grid-ope">${tunti.ope}</span>
                                 <span class="grid-tila ${lisaluokka}">${opettajanTila}</span>
                                 <span class="grid-aika">${tunti.alku}-${tunti.loppu}</span>
                                 <span class="grid-ryhma">${tunti.ryhma}</span>
                             `;
+                            korttiVaaka.addEventListener('click', () => avaaTilaModal(tunti, viikkoNumero));
                             blokkiDivVaaka.appendChild(korttiVaaka);
                         });
 
@@ -870,6 +1120,32 @@
             document.getElementById('ope-suodatin').addEventListener('change', (e) => {
                 valittuOpettaja = e.target.value;
                 suorita(valittuViikko);
+            });
+
+            document.getElementById('modal-tallenna').addEventListener('click', async () => {
+                try {
+                    await tallennaTilaMuutos();
+                } catch (err) {
+                    alert(err.message);
+                }
+            });
+
+            document.getElementById('modal-palauta').addEventListener('click', async () => {
+                try {
+                    await palautaAutomaattiseksi();
+                } catch (err) {
+                    alert(err.message);
+                }
+            });
+
+            document.getElementById('modal-peruuta').addEventListener('click', () => {
+                suljeTilaModal();
+            });
+
+            document.getElementById('tila-modal-backdrop').addEventListener('click', (e) => {
+                if (e.target.id === 'tila-modal-backdrop') {
+                    suljeTilaModal();
+                }
             });
 
             suorita(valittuViikko);
