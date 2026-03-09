@@ -542,7 +542,7 @@
 
         <div class="viikko-ohjaus">
             <button id="edellinen-viikko">← Edellinen</button>
-            <div class="viikko-info" id="viikko-naytto">Ladataan tietoja Sheetsistä...</div>
+            <div class="viikko-info" id="viikko-naytto">Ladataan tietoja...</div>
             <button id="nykyinen-viikko">Nykyinen viikko</button>
             <button id="seuraava-viikko">Seuraava →</button>
         </div>
@@ -581,11 +581,10 @@
 
     <script>
         const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRNc9D23NHyoU0H5tLM86bd5w-7E318BH0RLa3SLcgy1xmkENyDY6yCliA64Iyagsff6SYAFAwlQKfp/pub?output=csv';
-        const appsScriptUrl = 'LISAA_TAHAN_APPS_SCRIPT_WEB_APP_URL';
+        const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbx8jqLHNPVv2E-a2dAIpdNmsUiWtFm_mrZ4FYjU-OpT-Tt500IpH2yyKGc151roYHY/exec';
 
         const ASETUKSET = {
             opettajat: ["Mypi", "Hanna", "Päivi", "Jenni", "Tuomas"],
-
             varit: {
                 "Mypi":   "var(--vari-mypi)",
                 "Hanna":  "var(--vari-hanna)",
@@ -593,9 +592,7 @@
                 "Jenni":  "var(--vari-jenni)",
                 "Tuomas": "var(--vari-tuomas)"
             },
-
             aloitusViikko: 11,
-
             lahtoTilat: {
                 2: {
                     "Mypi": "Yläsali",
@@ -730,7 +727,14 @@
                 cache: 'no-store'
             });
 
-            const data = await response.json();
+            const rawText = await response.text();
+
+            let data;
+            try {
+                data = JSON.parse(rawText);
+            } catch (err) {
+                throw new Error('Apps Script ei palauttanut JSONia. Vastaus oli: ' + rawText.slice(0, 200));
+            }
 
             if (!data.ok) {
                 throw new Error(data.error || 'Tilamuutosten haku epäonnistui');
@@ -811,7 +815,14 @@
                 body: JSON.stringify(payload)
             });
 
-            const data = await response.json();
+            const rawText = await response.text();
+
+            let data;
+            try {
+                data = JSON.parse(rawText);
+            } catch (err) {
+                throw new Error('Tallennus ei palauttanut JSONia. Vastaus oli: ' + rawText.slice(0, 200));
+            }
 
             if (!data.ok) {
                 throw new Error(data.error || 'Tallennus epäonnistui');
@@ -840,7 +851,14 @@
                 body: JSON.stringify(payload)
             });
 
-            const data = await response.json();
+            const rawText = await response.text();
+
+            let data;
+            try {
+                data = JSON.parse(rawText);
+            } catch (err) {
+                throw new Error('Palautus ei palauttanut JSONia. Vastaus oli: ' + rawText.slice(0, 200));
+            }
 
             if (!data.ok) {
                 throw new Error(data.error || 'Palautus epäonnistui');
@@ -894,8 +912,8 @@
                     csvCache = await response.text();
                 }
 
-                if (!appsScriptUrl || appsScriptUrl.includes('https://script.google.com/macros/s/AKfycbx8jqLHNPVv2E-a2dAIpdNmsUiWtFm_mrZ4FYjU-OpT-Tt500IpH2yyKGc151roYHY/exec')) {
-                    throw new Error('Apps Script URL puuttuu. Lisää se koodiin muuttujaan appsScriptUrl.');
+                if (!appsScriptUrl) {
+                    throw new Error('Apps Script URL puuttuu.');
                 }
 
                 await haeTilamuutokset();
