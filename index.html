@@ -740,16 +740,28 @@
         }
 
         function viikkoSiirtyma(viikkoNumero, kiertoPituus) {
-            let aktiivisiaViikkoja = 0;
+    const aloitus = parseISODate(ASETUKSET.lukuvuodenAloitusPvm);
+    aloitus.setHours(0, 0, 0, 0);
 
-            for (let v = ASETUKSET.aloitusViikko; v < viikkoNumero; v++) {
-                if (!ASETUKSET.eiKierraViikot.includes(v)) {
-                    aktiivisiaViikkoja++;
-                }
-            }
+    const viikonPaivamaarat = haeViikonPaivamaarat(viikkoNumero);
+    const kohde = new Date(viikonPaivamaarat["Maanantai"].date);
+    kohde.setHours(0, 0, 0, 0);
 
-            return aktiivisiaViikkoja % kiertoPituus;
+    let aktiivisiaViikkoja = 0;
+    const laskuri = new Date(aloitus);
+
+    while (laskuri < kohde) {
+        const viikonNumero = haeViikkonumero(laskuri);
+
+        if (!ASETUKSET.eiKierraViikot.includes(viikonNumero)) {
+            aktiivisiaViikkoja++;
         }
+
+        laskuri.setDate(laskuri.getDate() + 7);
+    }
+
+    return aktiivisiaViikkoja % kiertoPituus;
+}
 
         function haeOpettajanViikonTila(opettaja, kierto, viikkoNumero) {
             const tilat = tilatKierroksittain[kierto];
@@ -798,6 +810,16 @@
 
         function haeManuaalinenTila(viikkoNumero, tunti) {
             function paivitaOverrideCacheTallennuksenJalkeen(muutos) {
+    ...
+}
+
+function poistaOverrideCachesta(muutos) {
+    ...
+}
+
+function haeManuaalinenTila(viikkoNumero, tunti) {
+    ...
+}
     const avain = teeOverrideAvain(
         muutos.viikko,
         muutos.paiva,
@@ -1047,8 +1069,9 @@ function poistaOverrideCachesta(muutos) {
             return wrap;
         }
 
+                
         async function suorita(viikkoNumero = null, options = {}) {
-    const { skipOverridesFetch = false } = options; {
+    const { skipOverridesFetch = false } = options; 
             try {
                 if (!csvCache) {
                     const response = await fetch(sheetUrl + '&t=' + Date.now());
