@@ -752,14 +752,34 @@
             return `${date.getDate()}.${date.getMonth() + 1}.`;
         }
 
+        function haeIsoViikonMaanantai(vuosi, viikko) {
+            const tammikuunNeljäs = new Date(vuosi, 0, 4);
+            const viikonpaiva = tammikuunNeljäs.getDay() || 7;
+            const viikon1Maanantai = new Date(tammikuunNeljäs);
+            viikon1Maanantai.setDate(tammikuunNeljäs.getDate() - viikonpaiva + 1);
+
+            const maanantai = new Date(viikon1Maanantai);
+            maanantai.setDate(viikon1Maanantai.getDate() + (viikko - 1) * 7);
+            maanantai.setHours(0, 0, 0, 0);
+
+            return maanantai;
+        }
+
+        function haeLukuvuodenVuosiViikolle(viikkoNumero) {
+            const aloitusPvm = parseISODate(ASETUKSET.lukuvuodenAloitusPvm);
+            const aloitusVuosi = aloitusPvm.getFullYear();
+
+            return viikkoNumero < ASETUKSET.aloitusViikko
+                ? aloitusVuosi + 1
+                : aloitusVuosi;
+        }
+
         function haeViikonPaivamaarat(viikkoNumero) {
             const viikonpaivatLyhyet = ["Ma", "Ti", "Ke", "To", "Pe"];
             const tulos = {};
 
-            const aloitus = parseISODate(ASETUKSET.lukuvuodenAloitusPvm);
-            const viikkoero = viikkoNumero - ASETUKSET.aloitusViikko;
-            const viikonMaanantai = new Date(aloitus);
-            viikonMaanantai.setDate(aloitus.getDate() + viikkoero * 7);
+            const kohdeVuosi = haeLukuvuodenVuosiViikolle(viikkoNumero);
+            const viikonMaanantai = haeIsoViikonMaanantai(kohdeVuosi, viikkoNumero);
 
             viikonpaivat.forEach((nimi, i) => {
                 const pvm = new Date(viikonMaanantai);
@@ -778,8 +798,8 @@
             const aloitus = parseISODate(ASETUKSET.lukuvuodenAloitusPvm);
             aloitus.setHours(0, 0, 0, 0);
 
-            const viikonPaivamaarat = haeViikonPaivamaarat(viikkoNumero);
-            const kohde = new Date(viikonPaivamaarat["Maanantai"].date);
+            const kohdeVuosi = haeLukuvuodenVuosiViikolle(viikkoNumero);
+            const kohde = haeIsoViikonMaanantai(kohdeVuosi, viikkoNumero);
             kohde.setHours(0, 0, 0, 0);
 
             let aktiivisiaViikkoja = 0;
@@ -787,11 +807,9 @@
 
             while (laskuri < kohde) {
                 const viikonNumeroLaskurille = haeViikkonumero(laskuri);
-
                 if (!ASETUKSET.eiKierraViikot.includes(viikonNumeroLaskurille)) {
                     aktiivisiaViikkoja++;
                 }
-
                 laskuri.setDate(laskuri.getDate() + 7);
             }
 
@@ -844,22 +862,10 @@
         }
 
         function paivitaOverrideCacheTallennuksenJalkeen(muutos) {
-            const avain = teeOverrideAvain(
-                muutos.viikko,
-                muutos.paiva,
-                muutos.alku,
-                muutos.loppu,
-                muutos.ope
-            );
+            const avain = teeOverrideAvain(muutos.viikko, muutos.paiva, muutos.alku, muutos.loppu, muutos.ope);
 
             overridesCache = overridesCache.filter(item => {
-                const itemAvain = teeOverrideAvain(
-                    item.viikko,
-                    item.paiva,
-                    item.alku,
-                    item.loppu,
-                    item.ope
-                );
+                const itemAvain = teeOverrideAvain(item.viikko, item.paiva, item.alku, item.loppu, item.ope);
                 return itemAvain !== avain;
             });
 
@@ -875,22 +881,10 @@
         }
 
         function poistaOverrideCachesta(muutos) {
-            const avain = teeOverrideAvain(
-                muutos.viikko,
-                muutos.paiva,
-                muutos.alku,
-                muutos.loppu,
-                muutos.ope
-            );
+            const avain = teeOverrideAvain(muutos.viikko, muutos.paiva, muutos.alku, muutos.loppu, muutos.ope);
 
             overridesCache = overridesCache.filter(item => {
-                const itemAvain = teeOverrideAvain(
-                    item.viikko,
-                    item.paiva,
-                    item.alku,
-                    item.loppu,
-                    item.ope
-                );
+                const itemAvain = teeOverrideAvain(item.viikko, item.paiva, item.alku, item.loppu, item.ope);
                 return itemAvain !== avain;
             });
         }
@@ -943,7 +937,6 @@
             const tallennaNappi = document.getElementById('modal-tallenna');
             const palautaNappi = document.getElementById('modal-palauta');
             const peruutaNappi = document.getElementById('modal-peruuta');
-
             const alkuperainenTeksti = tallennaNappi.textContent;
 
             try {
@@ -979,7 +972,6 @@
                 }
 
                 const rawText = await response.text();
-
                 let data;
                 try {
                     data = JSON.parse(rawText);
@@ -1009,7 +1001,6 @@
             const tallennaNappi = document.getElementById('modal-tallenna');
             const palautaNappi = document.getElementById('modal-palauta');
             const peruutaNappi = document.getElementById('modal-peruuta');
-
             const alkuperainenTeksti = palautaNappi.textContent;
 
             try {
@@ -1038,7 +1029,6 @@
                 }
 
                 const rawText = await response.text();
-
                 let data;
                 try {
                     data = JSON.parse(rawText);
@@ -1282,7 +1272,12 @@
         }
 
         window.onload = () => {
-            valittuViikko = haeViikkonumero(new Date());
+            const tanaan = new Date();
+            const lukuvuodenAloitus = parseISODate(ASETUKSET.lukuvuodenAloitusPvm);
+
+            valittuViikko = tanaan < lukuvuodenAloitus
+                ? ASETUKSET.aloitusViikko
+                : haeViikkonumero(tanaan);
 
             const select = document.getElementById('ope-suodatin');
             select.innerHTML = '<option value="Kaikki">Kaikki opettajat</option>';
@@ -1296,16 +1291,21 @@
 
             document.getElementById('edellinen-viikko').addEventListener('click', () => {
                 valittuViikko--;
+                if (valittuViikko < 1) valittuViikko = 52;
                 suorita(valittuViikko);
             });
 
             document.getElementById('seuraava-viikko').addEventListener('click', () => {
                 valittuViikko++;
+                if (valittuViikko > 52) valittuViikko = 1;
                 suorita(valittuViikko);
             });
 
             document.getElementById('nykyinen-viikko').addEventListener('click', () => {
-                valittuViikko = haeViikkonumero(new Date());
+                const nyt = new Date();
+                valittuViikko = nyt < lukuvuodenAloitus
+                    ? ASETUKSET.aloitusViikko
+                    : haeViikkonumero(nyt);
                 suorita(valittuViikko);
             });
 
