@@ -834,47 +834,51 @@
         }
 
         async function tallennaTilaMuutos() {
-            if (!aktiivinenMuokkaus) return;
+    if (!aktiivinenMuokkaus) return;
 
-            const uusiTila = document.getElementById('modal-uusi-tila').value.trim();
-            if (!uusiTila) {
-                alert('Kirjoita paikka tai käytä "Palauta automaattiseksi".');
-                return;
-            }
+    const uusiTila = document.getElementById('modal-uusi-tila').value.trim();
+    if (!uusiTila) {
+        alert('Kirjoita paikka tai käytä "Palauta automaattiseksi".');
+        return;
+    }
 
-            const payload = {
-                action: 'saveOverride',
-                viikko: aktiivinenMuokkaus.viikko,
-                paiva: aktiivinenMuokkaus.paiva,
-                alku: aktiivinenMuokkaus.alku,
-                loppu: aktiivinenMuokkaus.loppu,
-                ope: aktiivinenMuokkaus.ope,
-                korvaava_tila: uusiTila
-            };
+    const payload = {
+        action: 'saveOverride',
+        viikko: aktiivinenMuokkaus.viikko,
+        paiva: aktiivinenMuokkaus.paiva,
+        alku: aktiivinenMuokkaus.alku,
+        loppu: aktiivinenMuokkaus.loppu,
+        ope: aktiivinenMuokkaus.ope,
+        korvaava_tila: uusiTila
+    };
 
-            const response = await fetch(appsScriptUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
+    const response = await fetch(appsScriptUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+    });
 
-            const rawText = await response.text();
+    if (!response.ok) {
+        throw new Error(`Tallennus epäonnistui. HTTP ${response.status}`);
+    }
 
-            let data;
-            try {
-                data = JSON.parse(rawText);
-            } catch (err) {
-                throw new Error('Tallennus ei palauttanut JSONia. Vastaus oli: ' + rawText.slice(0, 200));
-            }
+    const rawText = await response.text();
 
-            if (!data.ok) {
-                throw new Error(data.error || 'Tallennus epäonnistui');
-            }
+    let data;
+    try {
+        data = JSON.parse(rawText);
+    } catch (err) {
+        throw new Error('Tallennus ei palauttanut JSONia. Vastaus oli: ' + rawText.slice(0, 200));
+    }
 
-            await haeTilamuutokset();
-            suljeTilaModal();
-            await suorita(valittuViikko);
-        }
+    if (!data.ok) {
+        throw new Error(data.error || 'Tallennus epäonnistui');
+    }
+
+    await haeTilamuutokset();
+    suljeTilaModal();
+    await suorita(valittuViikko);
+}
 
         async function palautaAutomaattiseksi() {
             if (!aktiivinenMuokkaus) return;
