@@ -25,7 +25,7 @@
             padding-bottom: 50px;
         }
 
-        .header {
+        .header, .wilma-panel {
             text-align: center;
             margin-bottom: 20px;
             background: white;
@@ -34,9 +34,50 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
 
-        .header h1 {
+        .header h1, .wilma-panel h2 {
             margin: 0;
             font-size: 1.4rem;
+        }
+
+        .top-tools {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        .top-tools button,
+        .viikko-ohjaus button,
+        .suodatin-rivi select,
+        .viikkohyppy button,
+        .wilma-controls select,
+        .wilma-controls input,
+        .wilma-controls button {
+            border: none;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        button {
+            background: #4f46e5;
+            color: white;
+            padding: 8px 14px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #4338ca;
+        }
+
+        .secondary-btn {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        .secondary-btn:hover {
+            background: #d1d5db;
         }
 
         .viikko-ohjaus {
@@ -48,25 +89,9 @@
             flex-wrap: wrap;
         }
 
-        .viikko-ohjaus button,
-        .suodatin-rivi select,
-        .viikkohyppy button {
-            border: none;
-            background: #4f46e5;
-            color: white;
-            padding: 8px 14px;
-            border-radius: 10px;
-            font-size: 0.95rem;
-            font-weight: 600;
-            cursor: pointer;
-        }
-
-        .viikko-ohjaus button:hover,
-        .viikkohyppy button:hover {
-            background: #4338ca;
-        }
-
-        .suodatin-rivi {
+        .suodatin-rivi,
+        .viikkohyppy,
+        .wilma-controls {
             display: flex;
             justify-content: center;
             align-items: center;
@@ -75,38 +100,28 @@
             flex-wrap: wrap;
         }
 
-        .suodatin-rivi label {
+        .suodatin-rivi label,
+        .viikkohyppy label,
+        .wilma-controls label {
             font-size: 0.9rem;
             color: #4b5563;
             font-weight: 600;
         }
 
-        .suodatin-rivi select {
+        .suodatin-rivi select,
+        .wilma-controls select {
             appearance: none;
+            background: #4f46e5;
+            color: white;
+            padding: 8px 14px;
+            cursor: pointer;
         }
 
-        .viikkohyppy {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 8px;
-            margin-top: 10px;
-            flex-wrap: wrap;
-        }
-
-        .viikkohyppy label {
-            font-size: 0.9rem;
-            color: #4b5563;
-            font-weight: 600;
-        }
-
-        .viikkohyppy input {
-            width: 90px;
+        .viikkohyppy input,
+        .wilma-controls input {
+            width: 110px;
             padding: 8px 10px;
             border: 1px solid #d1d5db;
-            border-radius: 10px;
-            font-size: 0.95rem;
-            font-weight: 600;
             background: white;
             color: #111827;
         }
@@ -123,6 +138,10 @@
             font-size: 0.8rem;
             color: #6b7280;
             margin-top: 8px;
+        }
+
+        .hidden {
+            display: none !important;
         }
 
         .yhteenveto-wrap {
@@ -437,6 +456,34 @@
             color: #374151;
         }
 
+        .wilma-wrap {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .wilma-output {
+            margin-top: 16px;
+            text-align: left;
+        }
+
+        .wilma-output textarea {
+            width: 100%;
+            min-height: 360px;
+            border: 1px solid #d1d5db;
+            border-radius: 12px;
+            padding: 12px;
+            font-size: 0.95rem;
+            line-height: 1.45;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .wilma-help {
+            color: #6b7280;
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+
         @media (min-width: 900px) {
             .yhteenveto-wrap {
                 grid-template-columns: 1fr 1fr 1fr;
@@ -459,13 +506,13 @@
                 padding-bottom: 16px;
             }
 
-            .header {
+            .header, .wilma-panel {
                 padding: 10px;
                 margin-bottom: 8px;
                 border-radius: 10px;
             }
 
-            .header h1 {
+            .header h1, .wilma-panel h2 {
                 font-size: 1rem;
             }
 
@@ -474,10 +521,14 @@
                 margin-top: 6px;
             }
 
+            .top-tools button,
             .viikko-ohjaus button,
             .suodatin-rivi select,
             .viikkohyppy button,
-            .viikkohyppy input {
+            .viikkohyppy input,
+            .wilma-controls select,
+            .wilma-controls input,
+            .wilma-controls button {
                 padding: 6px 10px;
                 border-radius: 8px;
                 font-size: 0.78rem;
@@ -490,13 +541,16 @@
             }
 
             .suodatin-rivi,
-            .viikkohyppy {
+            .viikkohyppy,
+            .wilma-controls,
+            .top-tools {
                 gap: 6px;
                 margin-top: 6px;
             }
 
             .suodatin-rivi label,
-            .viikkohyppy label {
+            .viikkohyppy label,
+            .wilma-controls label {
                 font-size: 0.78rem;
             }
 
@@ -574,40 +628,89 @@
                 margin-top: 2px;
                 line-height: 1.1;
             }
+
+            .wilma-output textarea {
+                min-height: 260px;
+                font-size: 0.85rem;
+            }
         }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <h1>Opettajien Tilajako</h1>
+    <div id="calendar-screen">
+        <div class="header">
+            <h1>Opettajien Tilajako</h1>
 
-        <div class="viikko-ohjaus">
-            <button id="edellinen-viikko">← Edellinen</button>
-            <div class="viikko-info" id="viikko-naytto">Ladataan tietoja...</div>
-            <button id="nykyinen-viikko">Nykyinen viikko</button>
-            <button id="seuraava-viikko">Seuraava →</button>
+            <div class="top-tools">
+                <button id="avaa-wilma" class="secondary-btn">Wilma-kooste</button>
+            </div>
+
+            <div class="viikko-ohjaus">
+                <button id="edellinen-viikko">← Edellinen</button>
+                <div class="viikko-info" id="viikko-naytto">Ladataan tietoja...</div>
+                <button id="nykyinen-viikko">Nykyinen viikko</button>
+                <button id="seuraava-viikko">Seuraava →</button>
+            </div>
+
+            <div class="viikkohyppy">
+                <label for="viikko-input">Siirry viikolle:</label>
+                <input id="viikko-input" type="number" min="1" max="52" placeholder="1-52">
+                <button id="siirry-viikolle">Siirry</button>
+            </div>
+
+            <div class="suodatin-rivi">
+                <label for="ope-suodatin">Näytä:</label>
+                <select id="ope-suodatin"></select>
+            </div>
+
+            <div class="ohje-teksti">Käännä puhelin vaakatasoon nähdäksesi koko viikon.</div>
         </div>
 
-        <div class="viikkohyppy">
-            <label for="viikko-input">Siirry viikolle:</label>
-            <input id="viikko-input" type="number" min="1" max="52" placeholder="1-52">
-            <button id="siirry-viikolle">Siirry</button>
-        </div>
-
-        <div class="suodatin-rivi">
-            <label for="ope-suodatin">Näytä:</label>
-            <select id="ope-suodatin"></select>
-        </div>
-
-        <div class="ohje-teksti">Käännä puhelin vaakatasoon nähdäksesi koko viikon.</div>
+        <div id="viikkoyhteenveto" class="yhteenveto-wrap"></div>
+        <div id="portrait-view"></div>
+        <div id="landscape-view"></div>
     </div>
 
-    <div id="viikkoyhteenveto" class="yhteenveto-wrap"></div>
-    <div id="portrait-view"></div>
-    <div id="landscape-view"></div>
+    <div id="wilma-screen" class="hidden">
+        <div class="wilma-wrap">
+            <div class="wilma-panel">
+                <h2>Wilma-kooste</h2>
 
-    <div id="tila-modal-backdrop" class="tila-modal-backdrop" style="display:none;">
+                <div class="top-tools">
+                    <button id="takaisin-kalenteriin" class="secondary-btn">← Takaisin kalenteriin</button>
+                </div>
+
+                <div class="wilma-controls">
+                    <label for="wilma-ope">Opettaja:</label>
+                    <select id="wilma-ope"></select>
+
+                    <label for="wilma-ryhma">Ryhmä:</label>
+                    <select id="wilma-ryhma"></select>
+
+                    <label for="wilma-alkuviikko">Alkuviikko:</label>
+                    <input id="wilma-alkuviikko" type="number" min="1" max="52">
+
+                    <label for="wilma-viikkomaarat">Viikkoja:</label>
+                    <input id="wilma-viikkomaarat" type="number" min="1" max="30" value="6">
+
+                    <button id="muodosta-wilma">Muodosta viesti</button>
+                    <button id="kopioi-wilma" class="secondary-btn">Kopioi teksti</button>
+                </div>
+
+                <div class="wilma-output">
+                    <textarea id="wilma-teksti" placeholder="Valmis Wilma-viesti tulee tähän."></textarea>
+                </div>
+
+                <div class="wilma-help">
+                    Muodostaa valmiin opettaja- ja ryhmäkohtaisen viestin, jossa näkyvät päivä, kellonaika ja paikka.
+                    Erityishuomiot voit lisätä itse Wilmaan ennen lähettämistä.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="tila-modal-backdrop" class="tila-modal-backdrop hidden">
         <div class="tila-modal">
             <div class="tila-modal-otsikko">Muuta paikkaa</div>
 
@@ -629,35 +732,14 @@
     </div>
 
     <script>
-           /*
-        ============================================================
-        YLLÄPITOASETUKSET – MUOKKAA VAIN TÄTÄ BLOKKIA TARVITTAESSA
-        ============================================================
-
-        1) sheetUrl = julkaistu CSV-linkki
-        2) appsScriptUrl = Apps Script web app /exec -osoite
-        3) opettajat = nimet täsmälleen siinä muodossa kuin Sheetissä
-        4) aloitusViikko = se viikko, josta lukuvuoden kierto alkaa
-        5) lukuvuodenAloitusKuukausiPaiva = muodossa KK-PP, esim. 08-10
-        6) eiKierraViikot = lomaviikot, joilla kierto ei etene
-        7) lahtoTilat:
-            - 2: 2-kierron opettajakohtaiset aloituspaikat
-            - 3: 3-kierron opettajakohtaiset aloituspaikat
-            - 4: 4-kierron opettajakohtaiset aloituspaikat
-
-        Opettajien järjestys ratkaisee kaiken:
-        ensimmäinen nimi vastaa aina ensimmäistä paikkaa, toinen toista jne.
-        ============================================================
-        */
-
         const YLLAPITO_ASETUKSET = {
             sheetUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRNc9D23NHyoU0H5tLM86bd5w-7E318BH0RLa3SLcgy1xmkENyDY6yCliA64Iyagsff6SYAFAwlQKfp/pub?output=csv',
             appsScriptUrl: 'https://script.google.com/macros/s/AKfycbzV0h8icVctrXg9ykg83eaukyZZJauOEXiHBbapCV5PoUUtHwtpj-yuleowVtGnuoUO/exec',
 
             opettajat: ["Mypi", "Hanna", "Päivi", "Jenni", "Tuomas"],
 
-            aloitusViikko: 11,
-            lukuvuodenAloitusKuukausiPaiva: '03-09',
+            aloitusViikko: 32,
+            lukuvuodenAloitusKuukausiPaiva: '08-10',
             eiKierraViikot: [42, 52, 1, 8],
 
             lahtoTilat: {
@@ -787,10 +869,7 @@
 
         function rakennaGroupedBaseCache(tapahtumat) {
             const paivat = {};
-
-            viikonpaivat.forEach(paiva => {
-                paivat[paiva] = { tunnit: [], blokit: [] };
-            });
+            viikonpaivat.forEach(paiva => paivat[paiva] = { tunnit: [], blokit: [] });
 
             tapahtumat.forEach(t => {
                 if (paivat[t.paiva]) paivat[t.paiva].tunnit.push(t);
@@ -807,7 +886,6 @@
                 });
 
                 const blokitMap = new Map();
-
                 tunnit.forEach(t => {
                     const avain = `${t.alku}|${t.loppu}|${t.kierto > 0 ? t.kierto : "vapaa"}`;
                     if (!blokitMap.has(avain)) blokitMap.set(avain, []);
@@ -844,6 +922,11 @@
 
         function muodostaLyhytPvm(date) {
             return `${date.getDate()}.${date.getMonth() + 1}.`;
+        }
+
+        function muodostaPvmJaPaiva(date) {
+            const viikonpaivatLyhyet = ['su', 'ma', 'ti', 'ke', 'to', 'pe', 'la'];
+            return `${viikonpaivatLyhyet[date.getDay()]} ${date.getDate()}.${date.getMonth() + 1}.`;
         }
 
         function haeIsoViikonMaanantai(vuosi, viikko) {
@@ -1008,12 +1091,12 @@
             document.getElementById('modal-aika').textContent = `${tunti.alku} - ${tunti.loppu}`;
             document.getElementById('modal-viikko').textContent = viikkoNumero;
             document.getElementById('modal-uusi-tila').value = haeManuaalinenTila(viikkoNumero, tunti);
-            document.getElementById('tila-modal-backdrop').style.display = 'flex';
+            document.getElementById('tila-modal-backdrop').classList.remove('hidden');
         }
 
         function suljeTilaModal() {
             aktiivinenMuokkaus = null;
-            document.getElementById('tila-modal-backdrop').style.display = 'none';
+            document.getElementById('tila-modal-backdrop').classList.add('hidden');
             document.getElementById('modal-uusi-tila').value = '';
         }
 
@@ -1074,7 +1157,6 @@
                 paivitaOverrideCacheTallennuksenJalkeen(payload);
                 suljeTilaModal();
                 await renderoiNykyinenViikkoNopeasti();
-
             } finally {
                 tallennaNappi.disabled = false;
                 palautaNappi.disabled = false;
@@ -1128,7 +1210,6 @@
                 poistaOverrideCachesta(payload);
                 suljeTilaModal();
                 await renderoiNykyinenViikkoNopeasti();
-
             } finally {
                 tallennaNappi.disabled = false;
                 palautaNappi.disabled = false;
@@ -1380,7 +1461,6 @@
                     document.getElementById('landscape-view').innerHTML = '';
                     renderoiPysty(viikonData, viikkoNumero);
                 }
-
             } catch (error) {
                 document.getElementById('viikko-naytto').innerHTML = `<span style="color:red;">Koodivirhe: ${error.message}</span>`;
                 console.error(error);
@@ -1402,6 +1482,47 @@
             if (select.value !== valittuOpettaja) {
                 valittuOpettaja = "Kaikki";
                 select.value = "Kaikki";
+            }
+        }
+
+        function paivitaWilmaOpettajat() {
+            const select = document.getElementById('wilma-ope');
+            const opettajat = [...new Set((parsedTapahtumatCache || []).map(t => t.ope).filter(Boolean))]
+                .sort((a, b) => a.localeCompare(b, 'fi'));
+
+            select.innerHTML = '';
+            opettajat.forEach(ope => {
+                const option = document.createElement('option');
+                option.value = ope;
+                option.textContent = ope;
+                select.appendChild(option);
+            });
+        }
+
+        function paivitaWilmaRyhmat() {
+            const ope = document.getElementById('wilma-ope')?.value || '';
+            const select = document.getElementById('wilma-ryhma');
+
+            let tunnit = parsedTapahtumatCache || [];
+            if (ope) {
+                tunnit = tunnit.filter(t => t.ope === ope);
+            }
+
+            const ryhmat = [...new Set(tunnit.map(t => t.ryhma).filter(Boolean))]
+                .sort((a, b) => a.localeCompare(b, 'fi'));
+
+            const vanhaArvo = select.value;
+            select.innerHTML = '';
+
+            ryhmat.forEach(ryhma => {
+                const option = document.createElement('option');
+                option.value = ryhma;
+                option.textContent = ryhma;
+                select.appendChild(option);
+            });
+
+            if (ryhmat.includes(vanhaArvo)) {
+                select.value = vanhaArvo;
             }
         }
 
@@ -1449,6 +1570,134 @@
             valittuViikko = viikko;
             valittuLukuvuodenAloitusVuosi = paataLukuvuosiValitulleViikolle(viikko);
             suorita(valittuViikko, { skipOverridesFetch: true });
+        }
+
+        function avaaWilmaNakyma() {
+            document.getElementById('calendar-screen').classList.add('hidden');
+            document.getElementById('wilma-screen').classList.remove('hidden');
+            document.getElementById('wilma-alkuviikko').value = valittuViikko;
+        }
+
+        function suljeWilmaNakyma() {
+            document.getElementById('wilma-screen').classList.add('hidden');
+            document.getElementById('calendar-screen').classList.remove('hidden');
+        }
+
+        function haeRyhmanTunnitViikolle(opettaja, ryhma, viikkoNumero) {
+            const viikonPaivamaarat = haeViikonPaivamaarat(viikkoNumero);
+
+            return (parsedTapahtumatCache || [])
+                .filter(t => t.ope === opettaja && t.ryhma === ryhma)
+                .map(tunti => {
+                    const kiertoTyyppi = tunti.kierto;
+                    const onkoVapaa = !kiertoTyyppi || isNaN(kiertoTyyppi) || kiertoTyyppi === 0;
+
+                    let paikka = '';
+                    const manuaalinenTila = haeManuaalinenTila(viikkoNumero, tunti);
+
+                    if (manuaalinenTila) {
+                        paikka = manuaalinenTila;
+                    } else if (tunti.poikkeus) {
+                        paikka = tunti.poikkeus;
+                    } else if (onkoVapaa) {
+                        paikka = 'Sopivat keskenään';
+                    } else if (kiertoTyyppi === 2 || kiertoTyyppi === 3 || kiertoTyyppi === 4) {
+                        paikka = haeOpettajanViikonTila(tunti.ope, kiertoTyyppi, viikkoNumero) || '—';
+                    } else {
+                        const tilat = tilatKierroksittain[kiertoTyyppi] || ['—'];
+                        const indeksi = Math.max(0, haeOpettajaIndeksi(tunti.ope)) % tilat.length;
+                        paikka = tilat[indeksi] || '—';
+                    }
+
+                    return {
+                        ...tunti,
+                        paikka,
+                        pvm: viikonPaivamaarat[tunti.paiva]?.date || null
+                    };
+                })
+                .sort((a, b) => {
+                    if (a.pvm && b.pvm) {
+                        const d = a.pvm - b.pvm;
+                        if (d !== 0) return d;
+                    }
+                    return aikaMinuuteiksi(a.alku) - aikaMinuuteiksi(b.alku);
+                });
+        }
+
+        function muodostaWilmaViesti() {
+            const opettaja = document.getElementById('wilma-ope').value;
+            const ryhma = document.getElementById('wilma-ryhma').value;
+            const alkuviikko = Number(document.getElementById('wilma-alkuviikko').value);
+            const viikkomaarat = Number(document.getElementById('wilma-viikkomaarat').value);
+
+            if (!opettaja) {
+                alert('Valitse opettaja.');
+                return;
+            }
+
+            if (!ryhma) {
+                alert('Valitse ryhmä.');
+                return;
+            }
+
+            if (isNaN(alkuviikko) || alkuviikko < 1 || alkuviikko > 52) {
+                alert('Anna alkuviikko väliltä 1–52.');
+                return;
+            }
+
+            if (isNaN(viikkomaarat) || viikkomaarat < 1 || viikkomaarat > 30) {
+                alert('Anna viikkomäärä väliltä 1–30.');
+                return;
+            }
+
+            let viikko = alkuviikko;
+            let loppuviikko = alkuviikko + viikkomaarat - 1;
+            while (loppuviikko > 52) loppuviikko -= 52;
+
+            let teksti = `Liikunnan paikat ryhmälle ${ryhma}, opettaja ${opettaja}, viikoille ${alkuviikko}–${loppuviikko}\n\n`;
+            teksti += `Hei,\n`;
+            teksti += `tässä ryhmän ${ryhma} liikunnan paikat seuraaville viikoille.\n\n`;
+
+            for (let i = 0; i < viikkomaarat; i++) {
+                const tunnit = haeRyhmanTunnitViikolle(opettaja, ryhma, viikko);
+
+                teksti += `Viikko ${viikko}\n`;
+
+                if (!tunnit.length) {
+                    teksti += `- Ei liikuntatunteja\n\n`;
+                } else {
+                    tunnit.forEach(tunti => {
+                        const pvmTeksti = tunti.pvm ? muodostaPvmJaPaiva(tunti.pvm) : tunti.paiva;
+                        teksti += `- ${pvmTeksti} klo ${tunti.alku}–${tunti.loppu} – ${tunti.paikka}\n`;
+                    });
+                    teksti += `\n`;
+                }
+
+                viikko++;
+                if (viikko > 52) viikko = 1;
+            }
+
+            teksti += `Mahdollisista muutoksista tiedotetaan Wilmassa.`;
+
+            document.getElementById('wilma-teksti').value = teksti;
+        }
+
+        async function kopioiWilmaTeksti() {
+            const text = document.getElementById('wilma-teksti').value;
+            if (!text.trim()) {
+                alert('Muodosta ensin viesti.');
+                return;
+            }
+
+            try {
+                await navigator.clipboard.writeText(text);
+                alert('Teksti kopioitu.');
+            } catch (err) {
+                const area = document.getElementById('wilma-teksti');
+                area.select();
+                area.setSelectionRange(0, 99999);
+                alert('Valmis teksti valittiin. Kopioi se itse.');
+            }
         }
 
         let resizeTimer = null;
@@ -1504,18 +1753,36 @@
                 }
             });
 
-            document.getElementById('modal-peruuta').addEventListener('click', () => {
-                suljeTilaModal();
-            });
+            document.getElementById('modal-peruuta').addEventListener('click', suljeTilaModal);
 
             document.getElementById('tila-modal-backdrop').addEventListener('click', (e) => {
                 if (e.target.id === 'tila-modal-backdrop') suljeTilaModal();
+            });
+
+            document.getElementById('avaa-wilma').addEventListener('click', avaaWilmaNakyma);
+            document.getElementById('takaisin-kalenteriin').addEventListener('click', suljeWilmaNakyma);
+            document.getElementById('muodosta-wilma').addEventListener('click', muodostaWilmaViesti);
+            document.getElementById('kopioi-wilma').addEventListener('click', kopioiWilmaTeksti);
+
+            document.getElementById('wilma-ope').addEventListener('change', () => {
+                paivitaWilmaRyhmat();
             });
 
             window.addEventListener('orientationchange', debounceRender);
 
             (async () => {
                 await haeTilamuutokset();
+                if (!csvCache) {
+                    const response = await fetch(sheetUrl + '&t=' + Date.now());
+                    csvCache = await response.text();
+                }
+                if (!parsedTapahtumatCache) parsedTapahtumatCache = parsiCsvTapahtumiksi(csvCache);
+                if (!groupedBaseCache) groupedBaseCache = rakennaGroupedBaseCache(parsedTapahtumatCache);
+
+                paivitaWilmaOpettajat();
+                paivitaWilmaRyhmat();
+
+                document.getElementById('wilma-alkuviikko').value = valittuViikko;
                 await suorita(valittuViikko, { skipOverridesFetch: true });
             })();
         };
