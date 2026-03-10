@@ -156,7 +156,7 @@
             background-color: #374151;
             color: white;
             padding: 12px 15px;
-            font-size: 1.2rem;
+            font-size: 1rem;
             font-weight: bold;
             position: sticky;
             top: 0;
@@ -176,7 +176,7 @@
             font-weight: 800;
             color: #374151;
             margin-bottom: 10px;
-            font-size: 1.1rem;
+            font-size: 1.02rem;
             display: flex;
             align-items: center;
             gap: 10px;
@@ -265,6 +265,15 @@
             padding-bottom: 10px;
             border-bottom: 2px solid #374151;
             color: #374151;
+            font-size: 0.95rem;
+        }
+
+        .sarake-pvm {
+            display: inline-block;
+            margin-top: 2px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: #6b7280;
         }
 
         .grid-blokki {
@@ -488,7 +497,11 @@
             .sarake-otsikko {
                 margin-bottom: 8px;
                 padding-bottom: 5px;
-                font-size: 0.82rem;
+                font-size: 0.8rem;
+            }
+
+            .sarake-pvm {
+                font-size: 0.58rem;
             }
 
             .grid-blokki {
@@ -565,6 +578,7 @@
 
             <div class="tila-modal-rivi"><strong>Opettaja:</strong> <span id="modal-ope"></span></div>
             <div class="tila-modal-rivi"><strong>Päivä:</strong> <span id="modal-paiva"></span></div>
+            <div class="tila-modal-rivi"><strong>Päivämäärä:</strong> <span id="modal-pvm"></span></div>
             <div class="tila-modal-rivi"><strong>Aika:</strong> <span id="modal-aika"></span></div>
             <div class="tila-modal-rivi"><strong>Viikko:</strong> <span id="modal-viikko"></span></div>
 
@@ -585,6 +599,7 @@
 
         const ASETUKSET = {
             opettajat: ["Mypi", "Hanna", "Päivi", "Jenni", "Tuomas"],
+
             varit: {
                 "Mypi":   "var(--vari-mypi)",
                 "Hanna":  "var(--vari-hanna)",
@@ -592,7 +607,11 @@
                 "Jenni":  "var(--vari-jenni)",
                 "Tuomas": "var(--vari-tuomas)"
             },
-            aloitusViikko: 11,
+
+            aloitusViikko: 32,
+            lukuvuodenAloitusPvm: '2026-08-10',
+            eiKierraViikot: [42, 52, 1, 8],
+
             lahtoTilat: {
                 2: {
                     "Mypi": "Yläsali",
@@ -620,7 +639,6 @@
 
         const opettajaJarjestys = ASETUKSET.opettajat;
         const viikonpaivat = ["Maanantai", "Tiistai", "Keskiviikko", "Torstai", "Perjantai"];
-        const aloitusViikko = ASETUKSET.aloitusViikko;
 
         const tilatKierroksittain = {
             1: ["Yläsali"],
@@ -690,8 +708,47 @@
             return tulos.map(x => x.trim());
         }
 
+        function parseISODate(iso) {
+            const [y, m, d] = iso.split('-').map(Number);
+            return new Date(y, m - 1, d);
+        }
+
+        function muodostaLyhytPvm(date) {
+            return `${date.getDate()}.${date.getMonth() + 1}.`;
+        }
+
+        function haeViikonPaivamaarat(viikkoNumero) {
+            const viikonpaivatLyhyet = ["Ma", "Ti", "Ke", "To", "Pe"];
+            const tulos = {};
+
+            const aloitus = parseISODate(ASETUKSET.lukuvuodenAloitusPvm);
+            const viikkoero = viikkoNumero - ASETUKSET.aloitusViikko;
+            const viikonMaanantai = new Date(aloitus);
+            viikonMaanantai.setDate(aloitus.getDate() + viikkoero * 7);
+
+            viikonpaivat.forEach((nimi, i) => {
+                const pvm = new Date(viikonMaanantai);
+                pvm.setDate(viikonMaanantai.getDate() + i);
+                tulos[nimi] = {
+                    lyhytPaiva: viikonpaivatLyhyet[i],
+                    teksti: muodostaLyhytPvm(pvm),
+                    date: pvm
+                };
+            });
+
+            return tulos;
+        }
+
         function viikkoSiirtyma(viikkoNumero, kiertoPituus) {
-            return ((viikkoNumero - aloitusViikko) % kiertoPituus + kiertoPituus) % kiertoPituus;
+            let aktiivisiaViikkoja = 0;
+
+            for (let v = ASETUKSET.aloitusViikko; v < viikkoNumero; v++) {
+                if (!ASETUKSET.eiKierraViikot.includes(v)) {
+                    aktiivisiaViikkoja++;
+                }
+            }
+
+            return aktiivisiaViikkoja % kiertoPituus;
         }
 
         function haeOpettajanViikonTila(opettaja, kierto, viikkoNumero) {
@@ -759,8 +816,11 @@
                 ope: tunti.ope
             };
 
+            const viikonPaivamaarat = haeViikonPaivamaarat(viikkoNumero);
+
             document.getElementById('modal-ope').textContent = tunti.ope;
             document.getElementById('modal-paiva').textContent = tunti.paiva;
+            document.getElementById('modal-pvm').textContent = viikonPaivamaarat[tunti.paiva]?.teksti || '';
             document.getElementById('modal-aika').textContent = `${tunti.alku} - ${tunti.loppu}`;
             document.getElementById('modal-viikko').textContent = viikkoNumero;
             document.getElementById('modal-uusi-tila').value = haeManuaalinenTila(viikkoNumero, tunti);
@@ -903,6 +963,8 @@
                     viikkoNumero = haeViikkonumero(new Date());
                 }
 
+                const viikonPaivamaarat = haeViikonPaivamaarat(viikkoNumero);
+
                 document.getElementById('viikko-naytto').textContent = `Viikko ${viikkoNumero}`;
 
                 const rivit = csvText.split(/\r?\n/).slice(1).filter(r => r.trim() !== "");
@@ -975,11 +1037,11 @@
 
                     const paivaDivPysty = document.createElement('div');
                     paivaDivPysty.className = 'paiva-laatikko';
-                    paivaDivPysty.innerHTML = `<div class="paiva-otsikko">${paiva}</div>`;
+                    paivaDivPysty.innerHTML = `<div class="paiva-otsikko">${viikonPaivamaarat[paiva]?.lyhytPaiva || paiva} ${viikonPaivamaarat[paiva]?.teksti || ''}</div>`;
 
                     const paivaSarake = document.createElement('div');
                     paivaSarake.className = 'paiva-sarake';
-                    paivaSarake.innerHTML = `<div class="sarake-otsikko">${paiva}</div>`;
+                    paivaSarake.innerHTML = `<div class="sarake-otsikko">${viikonPaivamaarat[paiva]?.lyhytPaiva || paiva}<br><span class="sarake-pvm">${viikonPaivamaarat[paiva]?.teksti || ''}</span></div>`;
 
                     lajitellutAvaimet.forEach(avain => {
                         const blokkiTunnit = blokit[avain];
