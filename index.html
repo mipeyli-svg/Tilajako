@@ -6,12 +6,16 @@
     <title>Tilajako</title>
     <style>
         :root {
-            --vari-mypi:   #bfdbfe;
-            --vari-hanna:  #bbf7d0;
-            --vari-paivi:  #fef08a;
-            --vari-jenni:  #fbcfe8;
-            --vari-tuomas: #e9d5ff;
-            --vari-tyhja:  #f3f4f6;
+            --vari-1: #bfdbfe;
+            --vari-2: #bbf7d0;
+            --vari-3: #fef08a;
+            --vari-4: #fbcfe8;
+            --vari-5: #e9d5ff;
+            --vari-tyhja: #f3f4f6;
+        }
+
+        * {
+            box-sizing: border-box;
         }
 
         body {
@@ -47,7 +51,9 @@
         }
 
         .viikko-ohjaus button,
-        .suodatin-rivi select {
+        .suodatin-rivi select,
+        .paneeli-nappi,
+        .paneeli-toiminnot button {
             border: none;
             background: #4f46e5;
             color: white;
@@ -55,13 +61,12 @@
             border-radius: 10px;
             font-size: 0.95rem;
             font-weight: 600;
-        }
-
-        .viikko-ohjaus button {
             cursor: pointer;
         }
 
-        .viikko-ohjaus button:hover {
+        .viikko-ohjaus button:hover,
+        .paneeli-nappi:hover,
+        .paneeli-toiminnot button:hover {
             background: #4338ca;
         }
 
@@ -97,6 +102,100 @@
             font-size: 0.8rem;
             color: #6b7280;
             margin-top: 8px;
+        }
+
+        .paneeli-wrap {
+            margin-top: 12px;
+        }
+
+        .paneeli {
+            display: none;
+            margin-top: 12px;
+            text-align: left;
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 14px;
+        }
+
+        .paneeli.auki {
+            display: block;
+        }
+
+        .paneeli-otsikko {
+            font-weight: 800;
+            margin-bottom: 10px;
+            color: #111827;
+        }
+
+        .paneeli-huom {
+            font-size: 0.82rem;
+            color: #6b7280;
+            margin-bottom: 12px;
+            line-height: 1.35;
+        }
+
+        .paneeli-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            gap: 12px;
+        }
+
+        .paneeli-kortti {
+            background: white;
+            border-radius: 10px;
+            padding: 10px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .paneeli-kortti h3 {
+            margin: 0 0 8px 0;
+            font-size: 0.95rem;
+        }
+
+        .paneeli-rivi {
+            margin-bottom: 8px;
+        }
+
+        .paneeli-rivi label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+            color: #374151;
+        }
+
+        .paneeli-rivi input,
+        .paneeli-rivi select {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            background: white;
+        }
+
+        .paneeli-toiminnot {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 14px;
+        }
+
+        .paneeli-toiminnot .reset-btn {
+            background: #dc2626;
+        }
+
+        .paneeli-toiminnot .reset-btn:hover {
+            background: #b91c1c;
+        }
+
+        .paneeli-toiminnot .secondary-btn {
+            background: #6b7280;
+        }
+
+        .paneeli-toiminnot .secondary-btn:hover {
+            background: #4b5563;
         }
 
         .yhteenveto-wrap {
@@ -375,7 +474,6 @@
 
         .tila-modal-input {
             width: 100%;
-            box-sizing: border-box;
             border: 1px solid #d1d5db;
             border-radius: 10px;
             padding: 10px 12px;
@@ -450,7 +548,9 @@
             }
 
             .viikko-ohjaus button,
-            .suodatin-rivi select {
+            .suodatin-rivi select,
+            .paneeli-nappi,
+            .paneeli-toiminnot button {
                 padding: 6px 10px;
                 border-radius: 8px;
                 font-size: 0.78rem;
@@ -545,6 +645,10 @@
                 margin-top: 2px;
                 line-height: 1.1;
             }
+
+            .paneeli-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -563,6 +667,62 @@
         <div class="suodatin-rivi">
             <label for="ope-suodatin">Näytä:</label>
             <select id="ope-suodatin"></select>
+        </div>
+
+        <div class="paneeli-wrap">
+            <button id="avaa-paneeli" class="paneeli-nappi">Avaa ohjauspaneeli</button>
+
+            <div id="ohjauspaneeli" class="paneeli">
+                <div class="paneeli-otsikko">Ohjauspaneeli</div>
+                <div class="paneeli-huom">
+                    Opettajien nimien pitää vastata Sheetissä olevia nimiä, jos haluat kierron toimivan oikein.
+                    Tämän paneelin asetukset tallentuvat vain tähän selaimeen/laitteeseen.
+                </div>
+
+                <div class="paneeli-grid">
+                    <div class="paneeli-kortti">
+                        <h3>Opettajien nimet</h3>
+                        <div id="opettaja-nimet-wrap"></div>
+                    </div>
+
+                    <div class="paneeli-kortti">
+                        <h3>2-kierron aloituspaikat</h3>
+                        <div id="lahto-2-wrap"></div>
+                    </div>
+
+                    <div class="paneeli-kortti">
+                        <h3>3-kierron aloituspaikat</h3>
+                        <div id="lahto-3-wrap"></div>
+                    </div>
+
+                    <div class="paneeli-kortti">
+                        <h3>4-kierron aloituspaikat</h3>
+                        <div id="lahto-4-wrap"></div>
+                    </div>
+
+                    <div class="paneeli-kortti">
+                        <h3>Lukuvuoden asetukset</h3>
+                        <div class="paneeli-rivi">
+                            <label for="asetukset-aloitusviikko">Aloitusviikko</label>
+                            <input id="asetukset-aloitusviikko" type="number" min="1" max="52">
+                        </div>
+                        <div class="paneeli-rivi">
+                            <label for="asetukset-aloituskp">Lukuvuoden aloitus (kk-pp)</label>
+                            <input id="asetukset-aloituskp" type="text" placeholder="08-10">
+                        </div>
+                        <div class="paneeli-rivi">
+                            <label for="asetukset-lomaviikot">Lomaviikot (pilkuilla)</label>
+                            <input id="asetukset-lomaviikot" type="text" placeholder="42,52,1,8">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="paneeli-toiminnot">
+                    <button id="tallenna-paneeli">Tallenna asetukset</button>
+                    <button id="palauta-oletukset" class="reset-btn">Palauta oletukset</button>
+                    <button id="sulje-paneeli" class="secondary-btn">Sulje</button>
+                </div>
+            </div>
         </div>
 
         <div class="ohje-teksti">Käännä puhelin vaakatasoon nähdäksesi koko viikon.</div>
@@ -596,50 +756,45 @@
     <script>
         const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRNc9D23NHyoU0H5tLM86bd5w-7E318BH0RLa3SLcgy1xmkENyDY6yCliA64Iyagsff6SYAFAwlQKfp/pub?output=csv';
         const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbzV0h8icVctrXg9ykg83eaukyZZJauOEXiHBbapCV5PoUUtHwtpj-yuleowVtGnuoUO/exec';
+        const STORAGE_KEY = 'tilajako_asetukset_v4';
 
-        const ASETUKSET = {
+        const OLETUS_ASETUKSET = {
             opettajat: ["Mypi", "Hanna", "Päivi", "Jenni", "Tuomas"],
-
-            varit: {
-                "Mypi":   "var(--vari-mypi)",
-                "Hanna":  "var(--vari-hanna)",
-                "Päivi":  "var(--vari-paivi)",
-                "Jenni":  "var(--vari-jenni)",
-                "Tuomas": "var(--vari-tuomas)"
-            },
-
             aloitusViikko: 32,
-            lukuvuodenAloitusPvm: '2026-08-10',
+            lukuvuodenAloitusKuukausiPaiva: '08-10',
             eiKierraViikot: [42, 52, 1, 8],
-
             lahtoTilat: {
-                2: {
-                    "Mypi": "Yläsali",
-                    "Hanna": "Alasali",
-                    "Päivi": "Alasali",
-                    "Jenni": "Yläsali",
-                    "Tuomas": "Alasali"
-                },
-                3: {
-                    "Mypi": "Muualla",
-                    "Hanna": "Alasali",
-                    "Päivi": "Yläsali",
-                    "Jenni": "Yläsali",
-                    "Tuomas": "Muualla"
-                },
-                4: {
-                    "Mypi": "Muualla 1",
-                    "Hanna": "Alasali",
-                    "Päivi": "Alasali",
-                    "Jenni": "Yläsali",
-                    "Tuomas": "Muualla 2"
-                }
+                2: ["Yläsali", "Alasali", "Alasali", "Yläsali", "Alasali"],
+                3: ["Muualla", "Alasali", "Yläsali", "Yläsali", "Muualla"],
+                4: ["Muualla 1", "Alasali", "Alasali", "Yläsali", "Muualla 2"]
             }
         };
 
-        const opettajaJarjestys = ASETUKSET.opettajat;
-        const viikonpaivat = ["Maanantai", "Tiistai", "Keskiviikko", "Torstai", "Perjantai"];
+        const OPETTAJA_VARIT = [
+            'var(--vari-1)',
+            'var(--vari-2)',
+            'var(--vari-3)',
+            'var(--vari-4)',
+            'var(--vari-5)'
+        ];
 
+        const TILA_OPTIONS = {
+            2: ["Yläsali", "Alasali"],
+            3: ["Yläsali", "Alasali", "Muualla"],
+            4: ["Yläsali", "Alasali", "Muualla 1", "Muualla 2"]
+        };
+
+        let ASETUKSET = null;
+        let valittuViikko = null;
+        let valittuLukuvuodenAloitusVuosi = null;
+        let csvCache = "";
+        let parsedTapahtumatCache = null;
+        let valittuOpettaja = "Kaikki";
+        let overridesCache = [];
+        let aktiivinenMuokkaus = null;
+        let viimeksiRenderoityViikko = null;
+
+        const viikonpaivat = ["Maanantai", "Tiistai", "Keskiviikko", "Torstai", "Perjantai"];
         const tilatKierroksittain = {
             1: ["Yläsali"],
             2: ["Yläsali", "Alasali"],
@@ -647,13 +802,72 @@
             4: ["Yläsali", "Alasali", "Muualla 1", "Muualla 2"]
         };
 
-        let valittuViikko = null;
-        let csvCache = "";
-        let parsedTapahtumatCache = null;
-        let valittuOpettaja = "Kaikki";
-        let overridesCache = [];
-        let aktiivinenMuokkaus = null;
-        let viimeksiRenderoityViikko = null;
+        function syvaKopio(obj) {
+            return JSON.parse(JSON.stringify(obj));
+        }
+
+        function normalisoiAsetukset(asetusObj) {
+            const asetukset = syvaKopio(asetusObj || OLETUS_ASETUKSET);
+
+            if (!Array.isArray(asetukset.opettajat)) {
+                asetukset.opettajat = syvaKopio(OLETUS_ASETUKSET.opettajat);
+            }
+
+            while (asetukset.opettajat.length < 5) {
+                asetukset.opettajat.push(`Opettaja ${asetukset.opettajat.length + 1}`);
+            }
+            asetukset.opettajat = asetukset.opettajat.slice(0, 5).map((nimi, i) => {
+                const siisti = String(nimi || '').trim();
+                return siisti || `Opettaja ${i + 1}`;
+            });
+
+            asetukset.aloitusViikko = Number(asetukset.aloitusViikko) || OLETUS_ASETUKSET.aloitusViikko;
+            if (asetukset.aloitusViikko < 1) asetukset.aloitusViikko = 1;
+            if (asetukset.aloitusViikko > 52) asetukset.aloitusViikko = 52;
+
+            if (!/^\d{2}-\d{2}$/.test(String(asetukset.lukuvuodenAloitusKuukausiPaiva || ''))) {
+                asetukset.lukuvuodenAloitusKuukausiPaiva = OLETUS_ASETUKSET.lukuvuodenAloitusKuukausiPaiva;
+            }
+
+            if (!Array.isArray(asetukset.eiKierraViikot)) {
+                asetukset.eiKierraViikot = syvaKopio(OLETUS_ASETUKSET.eiKierraViikot);
+            }
+            asetukset.eiKierraViikot = asetukset.eiKierraViikot
+                .map(v => Number(v))
+                .filter(v => !isNaN(v) && v >= 1 && v <= 52);
+
+            if (!asetukset.lahtoTilat) {
+                asetukset.lahtoTilat = syvaKopio(OLETUS_ASETUKSET.lahtoTilat);
+            }
+
+            [2, 3, 4].forEach(kierto => {
+                if (!Array.isArray(asetukset.lahtoTilat[kierto])) {
+                    asetukset.lahtoTilat[kierto] = syvaKopio(OLETUS_ASETUKSET.lahtoTilat[kierto]);
+                }
+                while (asetukset.lahtoTilat[kierto].length < 5) {
+                    asetukset.lahtoTilat[kierto].push(OLETUS_ASETUKSET.lahtoTilat[kierto][asetukset.lahtoTilat[kierto].length] || TILA_OPTIONS[kierto][0]);
+                }
+                asetukset.lahtoTilat[kierto] = asetukset.lahtoTilat[kierto]
+                    .slice(0, 5)
+                    .map(tila => TILA_OPTIONS[kierto].includes(tila) ? tila : TILA_OPTIONS[kierto][0]);
+            });
+
+            return asetukset;
+        }
+
+        function lataaAsetukset() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (!raw) return normalisoiAsetukset(OLETUS_ASETUKSET);
+                return normalisoiAsetukset(JSON.parse(raw));
+            } catch (e) {
+                return normalisoiAsetukset(OLETUS_ASETUKSET);
+            }
+        }
+
+        function tallennaAsetuksetLocalStorage() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(ASETUKSET));
+        }
 
         function haeViikkonumero(d) {
             d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
@@ -662,10 +876,14 @@
             return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
         }
 
-        function haeVari(nimi) {
-            const puhdas = (nimi || "").trim().toLowerCase();
-            const variAvain = Object.keys(ASETUKSET.varit).find(n => n.toLowerCase() === puhdas);
-            return variAvain ? ASETUKSET.varit[variAvain] : "var(--vari-tyhja)";
+        function haeVari(opettajaNimi) {
+            const indeksi = haeOpettajaIndeksi(opettajaNimi);
+            return indeksi >= 0 ? OPETTAJA_VARIT[indeksi % OPETTAJA_VARIT.length] : 'var(--vari-tyhja)';
+        }
+
+        function haeOpettajaIndeksi(nimi) {
+            const puhdas = String(nimi || '').trim().toLowerCase();
+            return ASETUKSET.opettajat.findIndex(x => String(x || '').trim().toLowerCase() === puhdas);
         }
 
         function normalisoiAika(aika) {
@@ -743,9 +961,21 @@
             return paivat;
         }
 
-        function parseISODate(iso) {
-            const [y, m, d] = iso.split('-').map(Number);
-            return new Date(y, m - 1, d);
+        function parseMonthDayToDate(monthDay, year) {
+            const [month, day] = String(monthDay).split('-').map(Number);
+            return new Date(year, month - 1, day);
+        }
+
+        function haeLukuvuodenAloitusVuosiPaivasta(date) {
+            const year = date.getFullYear();
+            const tämänVuodenAloitus = parseMonthDayToDate(ASETUKSET.lukuvuodenAloitusKuukausiPaiva, year);
+            return date >= tämänVuodenAloitus ? year : year - 1;
+        }
+
+        function haeLukuvuodenAloitusPvm(vuosi) {
+            const pvm = parseMonthDayToDate(ASETUKSET.lukuvuodenAloitusKuukausiPaiva, vuosi);
+            pvm.setHours(0, 0, 0, 0);
+            return pvm;
         }
 
         function muodostaLyhytPvm(date) {
@@ -765,25 +995,23 @@
             return maanantai;
         }
 
-        function haeLukuvuodenVuosiViikolle(viikkoNumero) {
-            const aloitusPvm = parseISODate(ASETUKSET.lukuvuodenAloitusPvm);
-            const aloitusVuosi = aloitusPvm.getFullYear();
-
+        function haeKalenterivuosiViikolle(viikkoNumero, lukuvuodenAloitusVuosi = valittuLukuvuodenAloitusVuosi) {
             return viikkoNumero < ASETUKSET.aloitusViikko
-                ? aloitusVuosi + 1
-                : aloitusVuosi;
+                ? lukuvuodenAloitusVuosi + 1
+                : lukuvuodenAloitusVuosi;
         }
 
-        function haeViikonPaivamaarat(viikkoNumero) {
+        function haeViikonPaivamaarat(viikkoNumero, lukuvuodenAloitusVuosi = valittuLukuvuodenAloitusVuosi) {
             const viikonpaivatLyhyet = ["Ma", "Ti", "Ke", "To", "Pe"];
             const tulos = {};
 
-            const kohdeVuosi = haeLukuvuodenVuosiViikolle(viikkoNumero);
-            const viikonMaanantai = haeIsoViikonMaanantai(kohdeVuosi, viikkoNumero);
+            const kalenterivuosi = haeKalenterivuosiViikolle(viikkoNumero, lukuvuodenAloitusVuosi);
+            const viikonMaanantai = haeIsoViikonMaanantai(kalenterivuosi, viikkoNumero);
 
             viikonpaivat.forEach((nimi, i) => {
                 const pvm = new Date(viikonMaanantai);
                 pvm.setDate(viikonMaanantai.getDate() + i);
+
                 tulos[nimi] = {
                     lyhytPaiva: viikonpaivatLyhyet[i],
                     teksti: muodostaLyhytPvm(pvm),
@@ -794,22 +1022,21 @@
             return tulos;
         }
 
-        function viikkoSiirtyma(viikkoNumero, kiertoPituus) {
-            const aloitus = parseISODate(ASETUKSET.lukuvuodenAloitusPvm);
-            aloitus.setHours(0, 0, 0, 0);
-
-            const kohdeVuosi = haeLukuvuodenVuosiViikolle(viikkoNumero);
+        function viikkoSiirtyma(viikkoNumero, kiertoPituus, lukuvuodenAloitusVuosi = valittuLukuvuodenAloitusVuosi) {
+            const aloitus = haeLukuvuodenAloitusPvm(lukuvuodenAloitusVuosi);
+            const kohdeVuosi = haeKalenterivuosiViikolle(viikkoNumero, lukuvuodenAloitusVuosi);
             const kohde = haeIsoViikonMaanantai(kohdeVuosi, viikkoNumero);
-            kohde.setHours(0, 0, 0, 0);
 
             let aktiivisiaViikkoja = 0;
             const laskuri = new Date(aloitus);
 
             while (laskuri < kohde) {
                 const viikonNumeroLaskurille = haeViikkonumero(laskuri);
+
                 if (!ASETUKSET.eiKierraViikot.includes(viikonNumeroLaskurille)) {
                     aktiivisiaViikkoja++;
                 }
+
                 laskuri.setDate(laskuri.getDate() + 7);
             }
 
@@ -818,7 +1045,8 @@
 
         function haeOpettajanViikonTila(opettaja, kierto, viikkoNumero) {
             const tilat = tilatKierroksittain[kierto];
-            const lahtoTila = ASETUKSET.lahtoTilat?.[kierto]?.[opettaja];
+            const opettajaIndeksi = haeOpettajaIndeksi(opettaja);
+            const lahtoTila = opettajaIndeksi >= 0 ? ASETUKSET.lahtoTilat?.[kierto]?.[opettajaIndeksi] : null;
 
             if (!tilat || !lahtoTila) return null;
 
@@ -1064,25 +1292,25 @@
             const rivit = document.createElement('div');
             rivit.className = 'yhteenveto-rivit';
 
-            const opettajat = opettajaJarjestys.filter(ope => naytetaankoOpettaja(ope));
+            ASETUKSET.opettajat
+                .filter(ope => naytetaankoOpettaja(ope))
+                .forEach(ope => {
+                    const card = document.createElement('div');
+                    card.className = 'yhteenveto-kortti';
+                    card.style.backgroundColor = haeVari(ope);
 
-            opettajat.forEach(ope => {
-                const card = document.createElement('div');
-                card.className = 'yhteenveto-kortti';
-                card.style.backgroundColor = haeVari(ope);
+                    const nimi = document.createElement('span');
+                    nimi.className = 'nimi';
+                    nimi.textContent = ope;
 
-                const nimi = document.createElement('span');
-                nimi.className = 'nimi';
-                nimi.textContent = ope;
+                    const tila = document.createElement('span');
+                    tila.className = 'tila';
+                    tila.textContent = haeOpettajanViikonTila(ope, kierto, viikkoNumero) || '—';
 
-                const tila = document.createElement('span');
-                tila.className = 'tila';
-                tila.textContent = haeOpettajanViikonTila(ope, kierto, viikkoNumero) || '—';
-
-                card.appendChild(nimi);
-                card.appendChild(tila);
-                rivit.appendChild(card);
-            });
+                    card.appendChild(nimi);
+                    card.appendChild(tila);
+                    rivit.appendChild(card);
+                });
 
             wrap.appendChild(rivit);
             return wrap;
@@ -1144,7 +1372,7 @@
                         const aikaEro = aikaMinuuteiksi(a.alku) - aikaMinuuteiksi(b.alku);
                         if (aikaEro !== 0) return aikaEro;
                         if ((a.kierto || 0) !== (b.kierto || 0)) return (a.kierto || 0) - (b.kierto || 0);
-                        return opettajaJarjestys.indexOf(a.ope) - opettajaJarjestys.indexOf(b.ope);
+                        return haeOpettajaIndeksi(a.ope) - haeOpettajaIndeksi(b.ope);
                     });
 
                     const blokit = {};
@@ -1177,7 +1405,7 @@
                         const kiertoTeksti = onkoVapaa ? "Sopimuksen mukaan" : `${kiertoTyyppi}-kierto`;
                         const otsikkoAika = `${eka.alku} - ${eka.loppu}`;
 
-                        blokkiTunnit.sort((a, b) => opettajaJarjestys.indexOf(a.ope) - opettajaJarjestys.indexOf(b.ope));
+                        blokkiTunnit.sort((a, b) => haeOpettajaIndeksi(a.ope) - haeOpettajaIndeksi(b.ope));
 
                         const blokkiDivPysty = document.createElement('div');
                         blokkiDivPysty.className = 'tuntiblokki';
@@ -1206,7 +1434,7 @@
                                 opettajanTila = haeOpettajanViikonTila(tunti.ope, kiertoTyyppi, viikkoNumero) || "—";
                             } else {
                                 const tilat = tilatKierroksittain[kiertoTyyppi] || ["—"];
-                                const indeksi = opettajaJarjestys.indexOf(tunti.ope) % tilat.length;
+                                const indeksi = Math.max(0, haeOpettajaIndeksi(tunti.ope)) % tilat.length;
                                 opettajanTila = tilat[indeksi] || "—";
                             }
 
@@ -1271,15 +1499,9 @@
             }
         }
 
-        window.onload = () => {
-            const tanaan = new Date();
-            const lukuvuodenAloitus = parseISODate(ASETUKSET.lukuvuodenAloitusPvm);
-
-            valittuViikko = tanaan < lukuvuodenAloitus
-                ? ASETUKSET.aloitusViikko
-                : haeViikkonumero(tanaan);
-
+        function paivitaOpeSuodatin() {
             const select = document.getElementById('ope-suodatin');
+            const vanha = valittuOpettaja;
             select.innerHTML = '<option value="Kaikki">Kaikki opettajat</option>';
 
             ASETUKSET.opettajat.forEach(ope => {
@@ -1289,29 +1511,182 @@
                 select.appendChild(option);
             });
 
+            const loytyy = ASETUKSET.opettajat.includes(vanha);
+            select.value = loytyy ? vanha : "Kaikki";
+            valittuOpettaja = select.value;
+        }
+
+        function teeSelectHtml(kierto, indeksi, currentValue) {
+            return `
+                <select data-kierto="${kierto}" data-index="${indeksi}" class="lahto-select">
+                    ${TILA_OPTIONS[kierto].map(tila => `
+                        <option value="${tila}" ${tila === currentValue ? 'selected' : ''}>${tila}</option>
+                    `).join('')}
+                </select>
+            `;
+        }
+
+        function rakennaOhjauspaneeli() {
+            const nimetWrap = document.getElementById('opettaja-nimet-wrap');
+            const lahto2Wrap = document.getElementById('lahto-2-wrap');
+            const lahto3Wrap = document.getElementById('lahto-3-wrap');
+            const lahto4Wrap = document.getElementById('lahto-4-wrap');
+
+            nimetWrap.innerHTML = '';
+            lahto2Wrap.innerHTML = '';
+            lahto3Wrap.innerHTML = '';
+            lahto4Wrap.innerHTML = '';
+
+            ASETUKSET.opettajat.forEach((nimi, i) => {
+                const nimiRivi = document.createElement('div');
+                nimiRivi.className = 'paneeli-rivi';
+                nimiRivi.innerHTML = `
+                    <label>Opettaja ${i + 1}</label>
+                    <input type="text" class="ope-nimi-input" data-index="${i}" value="${nimi}">
+                `;
+                nimetWrap.appendChild(nimiRivi);
+
+                const rivi2 = document.createElement('div');
+                rivi2.className = 'paneeli-rivi';
+                rivi2.innerHTML = `<label>${nimi}</label>${teeSelectHtml(2, i, ASETUKSET.lahtoTilat[2][i])}`;
+                lahto2Wrap.appendChild(rivi2);
+
+                const rivi3 = document.createElement('div');
+                rivi3.className = 'paneeli-rivi';
+                rivi3.innerHTML = `<label>${nimi}</label>${teeSelectHtml(3, i, ASETUKSET.lahtoTilat[3][i])}`;
+                lahto3Wrap.appendChild(rivi3);
+
+                const rivi4 = document.createElement('div');
+                rivi4.className = 'paneeli-rivi';
+                rivi4.innerHTML = `<label>${nimi}</label>${teeSelectHtml(4, i, ASETUKSET.lahtoTilat[4][i])}`;
+                lahto4Wrap.appendChild(rivi4);
+            });
+
+            document.getElementById('asetukset-aloitusviikko').value = ASETUKSET.aloitusViikko;
+            document.getElementById('asetukset-aloituskp').value = ASETUKSET.lukuvuodenAloitusKuukausiPaiva;
+            document.getElementById('asetukset-lomaviikot').value = ASETUKSET.eiKierraViikot.join(',');
+        }
+
+        function lueOhjauspaneelinAsetukset() {
+            const uudet = syvaKopio(ASETUKSET);
+
+            document.querySelectorAll('.ope-nimi-input').forEach(input => {
+                const i = Number(input.dataset.index);
+                uudet.opettajat[i] = input.value.trim() || `Opettaja ${i + 1}`;
+            });
+
+            document.querySelectorAll('.lahto-select').forEach(select => {
+                const kierto = Number(select.dataset.kierto);
+                const i = Number(select.dataset.index);
+                uudet.lahtoTilat[kierto][i] = select.value;
+            });
+
+            uudet.aloitusViikko = Number(document.getElementById('asetukset-aloitusviikko').value) || OLETUS_ASETUKSET.aloitusViikko;
+            uudet.lukuvuodenAloitusKuukausiPaiva = document.getElementById('asetukset-aloituskp').value.trim() || OLETUS_ASETUKSET.lukuvuodenAloitusKuukausiPaiva;
+            uudet.eiKierraViikot = document.getElementById('asetukset-lomaviikot').value
+                .split(',')
+                .map(x => Number(x.trim()))
+                .filter(x => !isNaN(x) && x >= 1 && x <= 52);
+
+            return normalisoiAsetukset(uudet);
+        }
+
+        function avaaOhjauspaneeli() {
+            rakennaOhjauspaneeli();
+            document.getElementById('ohjauspaneeli').classList.add('auki');
+        }
+
+        function suljeOhjauspaneeli() {
+            document.getElementById('ohjauspaneeli').classList.remove('auki');
+        }
+
+        function asetaNykyinenViikkoJaLukuvuosi() {
+            const tanaan = new Date();
+            valittuViikko = haeViikkonumero(tanaan);
+            valittuLukuvuodenAloitusVuosi = haeLukuvuodenAloitusVuosiPaivasta(tanaan);
+        }
+
+        function seuraavaViikko() {
+            const vanhaViikko = valittuViikko;
+            valittuViikko++;
+            if (valittuViikko > 52) valittuViikko = 1;
+
+            if (vanhaViikko < ASETUKSET.aloitusViikko && valittuViikko === ASETUKSET.aloitusViikko) {
+                valittuLukuvuodenAloitusVuosi++;
+            }
+        }
+
+        function edellinenViikko() {
+            const vanhaViikko = valittuViikko;
+            valittuViikko--;
+            if (valittuViikko < 1) valittuViikko = 52;
+
+            if (vanhaViikko === ASETUKSET.aloitusViikko) {
+                valittuLukuvuodenAloitusVuosi--;
+            }
+        }
+
+        window.onload = () => {
+            ASETUKSET = lataaAsetukset();
+            asetaNykyinenViikkoJaLukuvuosi();
+            paivitaOpeSuodatin();
+
             document.getElementById('edellinen-viikko').addEventListener('click', () => {
-                valittuViikko--;
-                if (valittuViikko < 1) valittuViikko = 52;
+                edellinenViikko();
                 suorita(valittuViikko);
             });
 
             document.getElementById('seuraava-viikko').addEventListener('click', () => {
-                valittuViikko++;
-                if (valittuViikko > 52) valittuViikko = 1;
+                seuraavaViikko();
                 suorita(valittuViikko);
             });
 
             document.getElementById('nykyinen-viikko').addEventListener('click', () => {
-                const nyt = new Date();
-                valittuViikko = nyt < lukuvuodenAloitus
-                    ? ASETUKSET.aloitusViikko
-                    : haeViikkonumero(nyt);
+                asetaNykyinenViikkoJaLukuvuosi();
                 suorita(valittuViikko);
             });
 
             document.getElementById('ope-suodatin').addEventListener('change', (e) => {
                 valittuOpettaja = e.target.value;
                 suorita(valittuViikko);
+            });
+
+            document.getElementById('avaa-paneeli').addEventListener('click', () => {
+                const paneeli = document.getElementById('ohjauspaneeli');
+                if (paneeli.classList.contains('auki')) {
+                    suljeOhjauspaneeli();
+                } else {
+                    avaaOhjauspaneeli();
+                }
+            });
+
+            document.getElementById('sulje-paneeli').addEventListener('click', () => {
+                suljeOhjauspaneeli();
+            });
+
+            document.getElementById('tallenna-paneeli').addEventListener('click', async () => {
+                ASETUKSET = lueOhjauspaneelinAsetukset();
+                tallennaAsetuksetLocalStorage();
+                paivitaOpeSuodatin();
+
+                const nyt = new Date();
+                valittuLukuvuodenAloitusVuosi = haeLukuvuodenAloitusVuosiPaivasta(
+                    haeViikonPaivamaarat(valittuViikko, valittuLukuvuodenAloitusVuosi)["Maanantai"].date
+                ) || haeLukuvuodenAloitusVuosiPaivasta(nyt);
+
+                rakennaOhjauspaneeli();
+                await suorita(valittuViikko);
+                alert('Asetukset tallennettu tähän selaimeen.');
+            });
+
+            document.getElementById('palauta-oletukset').addEventListener('click', async () => {
+                ASETUKSET = normalisoiAsetukset(OLETUS_ASETUKSET);
+                tallennaAsetuksetLocalStorage();
+                paivitaOpeSuodatin();
+                asetaNykyinenViikkoJaLukuvuosi();
+                rakennaOhjauspaneeli();
+                await suorita(valittuViikko);
+                alert('Oletusasetukset palautettu.');
             });
 
             document.getElementById('modal-tallenna').addEventListener('click', async () => {
