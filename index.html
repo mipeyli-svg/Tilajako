@@ -49,7 +49,8 @@
         }
 
         .viikko-ohjaus button,
-        .suodatin-rivi select {
+        .suodatin-rivi select,
+        .viikkohyppy button {
             border: none;
             background: #4f46e5;
             color: white;
@@ -60,7 +61,8 @@
             cursor: pointer;
         }
 
-        .viikko-ohjaus button:hover {
+        .viikko-ohjaus button:hover,
+        .viikkohyppy button:hover {
             background: #4338ca;
         }
 
@@ -81,6 +83,32 @@
 
         .suodatin-rivi select {
             appearance: none;
+        }
+
+        .viikkohyppy {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .viikkohyppy label {
+            font-size: 0.9rem;
+            color: #4b5563;
+            font-weight: 600;
+        }
+
+        .viikkohyppy input {
+            width: 90px;
+            padding: 8px 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            background: white;
+            color: #111827;
         }
 
         .viikko-info {
@@ -447,7 +475,9 @@
             }
 
             .viikko-ohjaus button,
-            .suodatin-rivi select {
+            .suodatin-rivi select,
+            .viikkohyppy button,
+            .viikkohyppy input {
                 padding: 6px 10px;
                 border-radius: 8px;
                 font-size: 0.78rem;
@@ -459,12 +489,14 @@
                 margin-top: 0;
             }
 
-            .suodatin-rivi {
+            .suodatin-rivi,
+            .viikkohyppy {
                 gap: 6px;
                 margin-top: 6px;
             }
 
-            .suodatin-rivi label {
+            .suodatin-rivi label,
+            .viikkohyppy label {
                 font-size: 0.78rem;
             }
 
@@ -557,6 +589,12 @@
             <button id="seuraava-viikko">Seuraava →</button>
         </div>
 
+        <div class="viikkohyppy">
+            <label for="viikko-input">Siirry viikolle:</label>
+            <input id="viikko-input" type="number" min="1" max="52" placeholder="1-52">
+            <button id="siirry-viikolle">Siirry</button>
+        </div>
+
         <div class="suodatin-rivi">
             <label for="ope-suodatin">Näytä:</label>
             <select id="ope-suodatin"></select>
@@ -591,7 +629,7 @@
     </div>
 
     <script>
-        /*
+          /*
         ============================================================
         YLLÄPITOASETUKSET – MUOKKAA VAIN TÄTÄ BLOKKIA TARVITTAESSA
         ============================================================
@@ -618,8 +656,8 @@
 
             opettajat: ["Mypi", "Hanna", "Päivi", "Jenni", "Tuomas"],
 
-            aloitusViikko: 11,
-            lukuvuodenAloitusKuukausiPaiva: '03-09',
+            aloitusViikko: 32,
+            lukuvuodenAloitusKuukausiPaiva: '08-10',
             eiKierraViikot: [42, 52, 1, 8],
 
             lahtoTilat: {
@@ -653,10 +691,16 @@
         let valittuLukuvuodenAloitusVuosi = null;
         let csvCache = "";
         let parsedTapahtumatCache = null;
+        let groupedBaseCache = null;
         let valittuOpettaja = "Kaikki";
         let overridesCache = [];
         let aktiivinenMuokkaus = null;
         let viimeksiRenderoityViikko = null;
+        let viikonTilaCache = new Map();
+
+        function tyhjennaViikkoCache() {
+            viikonTilaCache.clear();
+        }
 
         function haeViikkonumero(d) {
             d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
@@ -740,13 +784,43 @@
             return tapahtumat;
         }
 
-        function muodostaPaivatTietorakenteeksi(tapahtumat) {
+        function rakennaGroupedBaseCache(tapahtumat) {
             const paivat = {};
-            tapahtumat.forEach(t => {
-                if (!naytetaankoOpettaja(t.ope)) return;
-                if (!paivat[t.paiva]) paivat[t.paiva] = [];
-                paivat[t.paiva].push(t);
+
+            viikonpaivat.forEach(paiva => {
+                paivat[paiva] = { tunnit: [], blokit: [] };
             });
+
+            tapahtumat.forEach(t => {
+                if (paivat[t.paiva]) paivat[t.paiva].tunnit.push(t);
+            });
+
+            viikonpaivat.forEach(paiva => {
+                const tunnit = paivat[paiva].tunnit;
+
+                tunnit.sort((a, b) => {
+                    const aikaEro = aikaMinuuteiksi(a.alku) - aikaMinuuteiksi(b.alku);
+                    if (aikaEro !== 0) return aikaEro;
+                    if ((a.kierto || 0) !== (b.kierto || 0)) return (a.kierto || 0) - (b.kierto || 0);
+                    return haeOpettajaIndeksi(a.ope) - haeOpettajaIndeksi(b.ope);
+                });
+
+                const blokitMap = new Map();
+
+                tunnit.forEach(t => {
+                    const avain = `${t.alku}|${t.loppu}|${t.kierto > 0 ? t.kierto : "vapaa"}`;
+                    if (!blokitMap.has(avain)) blokitMap.set(avain, []);
+                    blokitMap.get(avain).push(t);
+                });
+
+                paivat[paiva].blokit = Array.from(blokitMap.entries())
+                    .sort((a, b) => aikaMinuuteiksi(a[0].split('|')[0]) - aikaMinuuteiksi(b[0].split('|')[0]))
+                    .map(([avain, tunnit]) => ({
+                        avain,
+                        tunnit: [...tunnit].sort((a, b) => haeOpettajaIndeksi(a.ope) - haeOpettajaIndeksi(b.ope))
+                    }));
+            });
+
             return paivat;
         }
 
@@ -780,7 +854,6 @@
             const maanantai = new Date(viikon1Maanantai);
             maanantai.setDate(viikon1Maanantai.getDate() + (viikko - 1) * 7);
             maanantai.setHours(0, 0, 0, 0);
-
             return maanantai;
         }
 
@@ -793,14 +866,12 @@
         function haeViikonPaivamaarat(viikkoNumero, lukuvuodenAloitusVuosi = valittuLukuvuodenAloitusVuosi) {
             const viikonpaivatLyhyet = ["Ma", "Ti", "Ke", "To", "Pe"];
             const tulos = {};
-
             const kalenterivuosi = haeKalenterivuosiViikolle(viikkoNumero, lukuvuodenAloitusVuosi);
             const viikonMaanantai = haeIsoViikonMaanantai(kalenterivuosi, viikkoNumero);
 
             viikonpaivat.forEach((nimi, i) => {
                 const pvm = new Date(viikonMaanantai);
                 pvm.setDate(viikonMaanantai.getDate() + i);
-
                 tulos[nimi] = {
                     lyhytPaiva: viikonpaivatLyhyet[i],
                     teksti: muodostaLyhytPvm(pvm),
@@ -821,9 +892,7 @@
 
             while (laskuri < kohde) {
                 const viikonNumeroLaskurille = haeViikkonumero(laskuri);
-                if (!ASETUKSET.eiKierraViikot.includes(viikonNumeroLaskurille)) {
-                    aktiivisiaViikkoja++;
-                }
+                if (!ASETUKSET.eiKierraViikot.includes(viikonNumeroLaskurille)) aktiivisiaViikkoja++;
                 laskuri.setDate(laskuri.getDate() + 7);
             }
 
@@ -861,19 +930,18 @@
             });
 
             const rawText = await response.text();
-
             let data;
+
             try {
                 data = JSON.parse(rawText);
             } catch (err) {
                 throw new Error('Apps Script ei palauttanut JSONia. Vastaus oli: ' + rawText.slice(0, 200));
             }
 
-            if (!data.ok) {
-                throw new Error(data.error || 'Tilamuutosten haku epäonnistui');
-            }
+            if (!data.ok) throw new Error(data.error || 'Tilamuutosten haku epäonnistui');
 
             overridesCache = data.items || [];
+            tyhjennaViikkoCache();
         }
 
         function paivitaOverrideCacheTallennuksenJalkeen(muutos) {
@@ -893,6 +961,8 @@
                 korvaava_tila: muutos.korvaava_tila,
                 voimassa: true
             });
+
+            tyhjennaViikkoCache();
         }
 
         function poistaOverrideCachesta(muutos) {
@@ -902,6 +972,8 @@
                 const itemAvain = teeOverrideAvain(item.viikko, item.paiva, item.alku, item.loppu, item.ope);
                 return itemAvain !== avain;
             });
+
+            tyhjennaViikkoCache();
         }
 
         function haeManuaalinenTila(viikkoNumero, tunti) {
@@ -982,21 +1054,18 @@
                     body: JSON.stringify(payload)
                 });
 
-                if (!response.ok) {
-                    throw new Error(`Tallennus epäonnistui. HTTP ${response.status}`);
-                }
+                if (!response.ok) throw new Error(`Tallennus epäonnistui. HTTP ${response.status}`);
 
                 const rawText = await response.text();
                 let data;
+
                 try {
                     data = JSON.parse(rawText);
                 } catch (err) {
                     throw new Error('Tallennus ei palauttanut JSONia. Vastaus oli: ' + rawText.slice(0, 200));
                 }
 
-                if (!data.ok) {
-                    throw new Error(data.error || 'Tallennus epäonnistui');
-                }
+                if (!data.ok) throw new Error(data.error || 'Tallennus epäonnistui');
 
                 paivitaOverrideCacheTallennuksenJalkeen(payload);
                 suljeTilaModal();
@@ -1039,21 +1108,18 @@
                     body: JSON.stringify(payload)
                 });
 
-                if (!response.ok) {
-                    throw new Error(`Palautus epäonnistui. HTTP ${response.status}`);
-                }
+                if (!response.ok) throw new Error(`Palautus epäonnistui. HTTP ${response.status}`);
 
                 const rawText = await response.text();
                 let data;
+
                 try {
                     data = JSON.parse(rawText);
                 } catch (err) {
                     throw new Error('Palautus ei palauttanut JSONia. Vastaus oli: ' + rawText.slice(0, 200));
                 }
 
-                if (!data.ok) {
-                    throw new Error(data.error || 'Palautus epäonnistui');
-                }
+                if (!data.ok) throw new Error(data.error || 'Palautus epäonnistui');
 
                 poistaOverrideCachesta(payload);
                 suljeTilaModal();
@@ -1103,6 +1169,175 @@
             return wrap;
         }
 
+        function onkoVaakaNakyma() {
+            return window.matchMedia('(orientation: landscape)').matches;
+        }
+
+        function rakennaViikonTilaData(viikkoNumero) {
+            const cacheAvain = `${valittuLukuvuodenAloitusVuosi}|${viikkoNumero}|${valittuOpettaja}`;
+
+            if (viikonTilaCache.has(cacheAvain)) return viikonTilaCache.get(cacheAvain);
+
+            const viikonPaivamaarat = haeViikonPaivamaarat(viikkoNumero);
+            const tulos = { viikonPaivamaarat, paivat: {}, loytyiSisaltoa: false };
+
+            viikonpaivat.forEach(paiva => {
+                const base = groupedBaseCache[paiva];
+                if (!base || !base.blokit.length) return;
+
+                const blokit = [];
+
+                base.blokit.forEach(blokki => {
+                    const suodatetutTunnit = blokki.tunnit.filter(tunti => naytetaankoOpettaja(tunti.ope));
+                    if (!suodatetutTunnit.length) return;
+
+                    tulos.loytyiSisaltoa = true;
+
+                    const eka = suodatetutTunnit[0];
+                    const kiertoTyyppi = eka.kierto;
+                    const onkoVapaa = !kiertoTyyppi || isNaN(kiertoTyyppi) || kiertoTyyppi === 0;
+                    const kiertoTeksti = onkoVapaa ? "Sopimuksen mukaan" : `${kiertoTyyppi}-kierto`;
+                    const otsikkoAika = `${eka.alku} - ${eka.loppu}`;
+
+                    const tunnit = suodatetutTunnit.map(tunti => {
+                        let opettajanTila = "";
+                        let lisaluokka = "";
+
+                        const manuaalinenTila = haeManuaalinenTila(viikkoNumero, tunti);
+
+                        if (manuaalinenTila) {
+                            opettajanTila = manuaalinenTila;
+                            lisaluokka = "tila-poikkeus";
+                        } else if (tunti.poikkeus) {
+                            opettajanTila = tunti.poikkeus;
+                            lisaluokka = "tila-poikkeus";
+                        } else if (onkoVapaa) {
+                            opettajanTila = "Sopivat keskenään";
+                            lisaluokka = "tila-vapaa";
+                        } else if (kiertoTyyppi === 2 || kiertoTyyppi === 3 || kiertoTyyppi === 4) {
+                            opettajanTila = haeOpettajanViikonTila(tunti.ope, kiertoTyyppi, viikkoNumero) || "—";
+                        } else {
+                            const tilat = tilatKierroksittain[kiertoTyyppi] || ["—"];
+                            const indeksi = Math.max(0, haeOpettajaIndeksi(tunti.ope)) % tilat.length;
+                            opettajanTila = tilat[indeksi] || "—";
+                        }
+
+                        return { ...tunti, opettajanTila, lisaluokka };
+                    });
+
+                    blokit.push({ kiertoTyyppi, onkoVapaa, kiertoTeksti, otsikkoAika, tunnit });
+                });
+
+                if (blokit.length) tulos.paivat[paiva] = blokit;
+            });
+
+            viikonTilaCache.set(cacheAvain, tulos);
+            return tulos;
+        }
+
+        function renderoiPysty(viikonData, viikkoNumero) {
+            const portraitDiv = document.getElementById('portrait-view');
+            portraitDiv.innerHTML = '';
+
+            if (!viikonData.loytyiSisaltoa) {
+                const tyhja = document.createElement('div');
+                tyhja.className = 'tyhja-teksti';
+                tyhja.textContent = 'Tälle valinnalle ei löytynyt tunteja.';
+                portraitDiv.appendChild(tyhja);
+                return;
+            }
+
+            viikonpaivat.forEach(paiva => {
+                const blokit = viikonData.paivat[paiva];
+                if (!blokit || !blokit.length) return;
+
+                const paivaDivPysty = document.createElement('div');
+                paivaDivPysty.className = 'paiva-laatikko';
+                paivaDivPysty.innerHTML = `<div class="paiva-otsikko">${viikonData.viikonPaivamaarat[paiva]?.lyhytPaiva || paiva} ${viikonData.viikonPaivamaarat[paiva]?.teksti || ''}</div>`;
+
+                blokit.forEach(blokki => {
+                    const blokkiDivPysty = document.createElement('div');
+                    blokkiDivPysty.className = 'tuntiblokki';
+                    blokkiDivPysty.innerHTML = `<div class="kello-otsikko">${blokki.otsikkoAika} <span>${blokki.kiertoTeksti}</span></div>`;
+
+                    blokki.tunnit.forEach(tunti => {
+                        const korttiPysty = document.createElement('div');
+                        korttiPysty.className = 'tunti-kortti';
+                        korttiPysty.style.backgroundColor = haeVari(tunti.ope);
+                        korttiPysty.style.cursor = 'pointer';
+                        korttiPysty.innerHTML = `
+                            <div class="vasen-puoli">
+                                <span class="ope-nimi">${tunti.ope}</span>
+                                <span class="ryhma-nimi">Ryhmä: ${tunti.ryhma}</span>
+                            </div>
+                            <div class="oikea-puoli">
+                                <span class="huone-nimi ${tunti.lisaluokka}">${tunti.opettajanTila}</span><br>
+                                <span class="aika-tarkenne">${tunti.alku} - ${tunti.loppu}</span>
+                            </div>
+                        `;
+                        korttiPysty.addEventListener('click', () => avaaTilaModal(tunti, viikkoNumero));
+                        blokkiDivPysty.appendChild(korttiPysty);
+                    });
+
+                    paivaDivPysty.appendChild(blokkiDivPysty);
+                });
+
+                portraitDiv.appendChild(paivaDivPysty);
+            });
+        }
+
+        function renderoiVaaka(viikonData, viikkoNumero) {
+            const landscapeDiv = document.getElementById('landscape-view');
+            landscapeDiv.innerHTML = '';
+
+            if (!viikonData.loytyiSisaltoa) {
+                const tyhja = document.createElement('div');
+                tyhja.className = 'tyhja-teksti';
+                tyhja.textContent = 'Tälle valinnalle ei löytynyt tunteja.';
+                landscapeDiv.appendChild(tyhja);
+                return;
+            }
+
+            const gridContainer = document.createElement('div');
+            gridContainer.className = 'viikko-grid';
+
+            viikonpaivat.forEach(paiva => {
+                const blokit = viikonData.paivat[paiva];
+                if (!blokit || !blokit.length) return;
+
+                const paivaSarake = document.createElement('div');
+                paivaSarake.className = 'paiva-sarake';
+                paivaSarake.innerHTML = `<div class="sarake-otsikko">${viikonData.viikonPaivamaarat[paiva]?.lyhytPaiva || paiva}<br><span class="sarake-pvm">${viikonData.viikonPaivamaarat[paiva]?.teksti || ''}</span></div>`;
+
+                blokit.forEach(blokki => {
+                    const blokkiDivVaaka = document.createElement('div');
+                    blokkiDivVaaka.className = 'grid-blokki';
+                    blokkiDivVaaka.innerHTML = `<div class="grid-kello">${blokki.otsikkoAika} (${blokki.onkoVapaa ? 'Vapaa' : blokki.kiertoTyyppi + '-k'})</div>`;
+
+                    blokki.tunnit.forEach(tunti => {
+                        const korttiVaaka = document.createElement('div');
+                        korttiVaaka.className = 'grid-kortti';
+                        korttiVaaka.style.backgroundColor = haeVari(tunti.ope);
+                        korttiVaaka.style.cursor = 'pointer';
+                        korttiVaaka.innerHTML = `
+                            <span class="grid-ope">${tunti.ope}</span>
+                            <span class="grid-tila ${tunti.lisaluokka}">${tunti.opettajanTila}</span>
+                            <span class="grid-aika">${tunti.alku}-${tunti.loppu}</span>
+                            <span class="grid-ryhma">${tunti.ryhma}</span>
+                        `;
+                        korttiVaaka.addEventListener('click', () => avaaTilaModal(tunti, viikkoNumero));
+                        blokkiDivVaaka.appendChild(korttiVaaka);
+                    });
+
+                    paivaSarake.appendChild(blokkiDivVaaka);
+                });
+
+                gridContainer.appendChild(paivaSarake);
+            });
+
+            landscapeDiv.appendChild(gridContainer);
+        }
+
         async function suorita(viikkoNumero = null, options = {}) {
             const { skipOverridesFetch = false } = options;
 
@@ -1112,24 +1347,17 @@
                     csvCache = await response.text();
                 }
 
-                if (!parsedTapahtumatCache) {
-                    parsedTapahtumatCache = parsiCsvTapahtumiksi(csvCache);
-                }
+                if (!parsedTapahtumatCache) parsedTapahtumatCache = parsiCsvTapahtumiksi(csvCache);
+                if (!groupedBaseCache) groupedBaseCache = rakennaGroupedBaseCache(parsedTapahtumatCache);
 
-                if (!skipOverridesFetch) {
-                    await haeTilamuutokset();
-                }
+                if (!skipOverridesFetch) await haeTilamuutokset();
 
-                if (viikkoNumero === null) {
-                    viikkoNumero = haeViikkonumero(new Date());
-                }
+                if (viikkoNumero === null) viikkoNumero = haeViikkonumero(new Date());
 
                 viimeksiRenderoityViikko = viikkoNumero;
 
-                const viikonPaivamaarat = haeViikonPaivamaarat(viikkoNumero);
                 document.getElementById('viikko-naytto').textContent = `Viikko ${viikkoNumero}`;
-
-                const paivat = muodostaPaivatTietorakenteeksi(parsedTapahtumatCache);
+                document.getElementById('viikko-input').value = viikkoNumero;
 
                 const yhteenvetoDiv = document.getElementById('viikkoyhteenveto');
                 yhteenvetoDiv.innerHTML = '';
@@ -1137,151 +1365,18 @@
                 yhteenvetoDiv.appendChild(teeYhteenvetoKortti('Tämän viikon 3-kierto', 3, viikkoNumero));
                 yhteenvetoDiv.appendChild(teeYhteenvetoKortti('Tämän viikon 4-kierto', 4, viikkoNumero));
 
-                const portraitDiv = document.getElementById('portrait-view');
-                const landscapeDiv = document.getElementById('landscape-view');
-                portraitDiv.innerHTML = '';
-                landscapeDiv.innerHTML = '';
+                const viikonData = rakennaViikonTilaData(viikkoNumero);
 
-                const gridContainer = document.createElement('div');
-                gridContainer.className = 'viikko-grid';
-
-                let loytyiSisaltoa = false;
-
-                viikonpaivat.forEach(paiva => {
-                    const paivanTunnit = paivat[paiva];
-                    if (!paivanTunnit || paivanTunnit.length === 0) return;
-
-                    loytyiSisaltoa = true;
-
-                    const paivanTunnitKopio = [...paivanTunnit];
-
-                    paivanTunnitKopio.sort((a, b) => {
-                        const aikaEro = aikaMinuuteiksi(a.alku) - aikaMinuuteiksi(b.alku);
-                        if (aikaEro !== 0) return aikaEro;
-                        if ((a.kierto || 0) !== (b.kierto || 0)) return (a.kierto || 0) - (b.kierto || 0);
-                        return haeOpettajaIndeksi(a.ope) - haeOpettajaIndeksi(b.ope);
-                    });
-
-                    const blokit = {};
-                    paivanTunnitKopio.forEach(t => {
-                        const avain = `${t.alku}|${t.loppu}|${t.kierto > 0 ? t.kierto : "vapaa"}`;
-                        if (!blokit[avain]) blokit[avain] = [];
-                        blokit[avain].push(t);
-                    });
-
-                    const lajitellutAvaimet = Object.keys(blokit).sort((a, b) => {
-                        const aikaA = a.split('|')[0];
-                        const aikaB = b.split('|')[0];
-                        return aikaMinuuteiksi(aikaA) - aikaMinuuteiksi(aikaB);
-                    });
-
-                    const paivaDivPysty = document.createElement('div');
-                    paivaDivPysty.className = 'paiva-laatikko';
-                    paivaDivPysty.innerHTML = `<div class="paiva-otsikko">${viikonPaivamaarat[paiva]?.lyhytPaiva || paiva} ${viikonPaivamaarat[paiva]?.teksti || ''}</div>`;
-
-                    const paivaSarake = document.createElement('div');
-                    paivaSarake.className = 'paiva-sarake';
-                    paivaSarake.innerHTML = `<div class="sarake-otsikko">${viikonPaivamaarat[paiva]?.lyhytPaiva || paiva}<br><span class="sarake-pvm">${viikonPaivamaarat[paiva]?.teksti || ''}</span></div>`;
-
-                    lajitellutAvaimet.forEach(avain => {
-                        const blokkiTunnit = [...blokit[avain]];
-                        const eka = blokkiTunnit[0];
-
-                        const kiertoTyyppi = eka.kierto;
-                        const onkoVapaa = !kiertoTyyppi || isNaN(kiertoTyyppi) || kiertoTyyppi === 0;
-                        const kiertoTeksti = onkoVapaa ? "Sopimuksen mukaan" : `${kiertoTyyppi}-kierto`;
-                        const otsikkoAika = `${eka.alku} - ${eka.loppu}`;
-
-                        blokkiTunnit.sort((a, b) => haeOpettajaIndeksi(a.ope) - haeOpettajaIndeksi(b.ope));
-
-                        const blokkiDivPysty = document.createElement('div');
-                        blokkiDivPysty.className = 'tuntiblokki';
-                        blokkiDivPysty.innerHTML = `<div class="kello-otsikko">${otsikkoAika} <span>${kiertoTeksti}</span></div>`;
-
-                        const blokkiDivVaaka = document.createElement('div');
-                        blokkiDivVaaka.className = 'grid-blokki';
-                        blokkiDivVaaka.innerHTML = `<div class="grid-kello">${otsikkoAika} (${onkoVapaa ? 'Vapaa' : kiertoTyyppi + '-k'})</div>`;
-
-                        blokkiTunnit.forEach(tunti => {
-                            let opettajanTila = "";
-                            let lisaluokka = "";
-
-                            const manuaalinenTila = haeManuaalinenTila(viikkoNumero, tunti);
-
-                            if (manuaalinenTila) {
-                                opettajanTila = manuaalinenTila;
-                                lisaluokka = "tila-poikkeus";
-                            } else if (tunti.poikkeus) {
-                                opettajanTila = tunti.poikkeus;
-                                lisaluokka = "tila-poikkeus";
-                            } else if (onkoVapaa) {
-                                opettajanTila = "Sopivat keskenään";
-                                lisaluokka = "tila-vapaa";
-                            } else if (kiertoTyyppi === 2 || kiertoTyyppi === 3 || kiertoTyyppi === 4) {
-                                opettajanTila = haeOpettajanViikonTila(tunti.ope, kiertoTyyppi, viikkoNumero) || "—";
-                            } else {
-                                const tilat = tilatKierroksittain[kiertoTyyppi] || ["—"];
-                                const indeksi = Math.max(0, haeOpettajaIndeksi(tunti.ope)) % tilat.length;
-                                opettajanTila = tilat[indeksi] || "—";
-                            }
-
-                            const korttiPysty = document.createElement('div');
-                            korttiPysty.className = 'tunti-kortti';
-                            korttiPysty.style.backgroundColor = haeVari(tunti.ope);
-                            korttiPysty.style.cursor = 'pointer';
-                            korttiPysty.innerHTML = `
-                                <div class="vasen-puoli">
-                                    <span class="ope-nimi">${tunti.ope}</span>
-                                    <span class="ryhma-nimi">Ryhmä: ${tunti.ryhma}</span>
-                                </div>
-                                <div class="oikea-puoli">
-                                    <span class="huone-nimi ${lisaluokka}">${opettajanTila}</span><br>
-                                    <span class="aika-tarkenne">${tunti.alku} - ${tunti.loppu}</span>
-                                </div>
-                            `;
-                            korttiPysty.addEventListener('click', () => avaaTilaModal(tunti, viikkoNumero));
-                            blokkiDivPysty.appendChild(korttiPysty);
-
-                            const korttiVaaka = document.createElement('div');
-                            korttiVaaka.className = 'grid-kortti';
-                            korttiVaaka.style.backgroundColor = haeVari(tunti.ope);
-                            korttiVaaka.style.cursor = 'pointer';
-                            korttiVaaka.innerHTML = `
-                                <span class="grid-ope">${tunti.ope}</span>
-                                <span class="grid-tila ${lisaluokka}">${opettajanTila}</span>
-                                <span class="grid-aika">${tunti.alku}-${tunti.loppu}</span>
-                                <span class="grid-ryhma">${tunti.ryhma}</span>
-                            `;
-                            korttiVaaka.addEventListener('click', () => avaaTilaModal(tunti, viikkoNumero));
-                            blokkiDivVaaka.appendChild(korttiVaaka);
-                        });
-
-                        paivaDivPysty.appendChild(blokkiDivPysty);
-                        paivaSarake.appendChild(blokkiDivVaaka);
-                    });
-
-                    portraitDiv.appendChild(paivaDivPysty);
-                    gridContainer.appendChild(paivaSarake);
-                });
-
-                if (loytyiSisaltoa) {
-                    landscapeDiv.appendChild(gridContainer);
+                if (onkoVaakaNakyma()) {
+                    document.getElementById('portrait-view').innerHTML = '';
+                    renderoiVaaka(viikonData, viikkoNumero);
                 } else {
-                    const tyhja1 = document.createElement('div');
-                    tyhja1.className = 'tyhja-teksti';
-                    tyhja1.textContent = 'Tälle valinnalle ei löytynyt tunteja.';
-
-                    const tyhja2 = document.createElement('div');
-                    tyhja2.className = 'tyhja-teksti';
-                    tyhja2.textContent = 'Tälle valinnalle ei löytynyt tunteja.';
-
-                    portraitDiv.appendChild(tyhja1);
-                    landscapeDiv.appendChild(tyhja2);
+                    document.getElementById('landscape-view').innerHTML = '';
+                    renderoiPysty(viikonData, viikkoNumero);
                 }
 
             } catch (error) {
-                document.getElementById('viikko-naytto').innerHTML =
-                    `<span style="color:red;">Koodivirhe: ${error.message}</span>`;
+                document.getElementById('viikko-naytto').innerHTML = `<span style="color:red;">Koodivirhe: ${error.message}</span>`;
                 console.error(error);
             }
         }
@@ -1330,6 +1425,40 @@
             }
         }
 
+        function paataLukuvuosiValitulleViikolle(viikko) {
+            const nykyinen = new Date();
+            const nykyinenLukuvuosi = haeLukuvuodenAloitusVuosiPaivasta(nykyinen);
+            const nykyinenViikko = haeViikkonumero(nykyinen);
+
+            if (nykyinenViikko >= ASETUKSET.aloitusViikko) {
+                return viikko < ASETUKSET.aloitusViikko ? nykyinenLukuvuosi + 1 : nykyinenLukuvuosi;
+            } else {
+                return viikko < ASETUKSET.aloitusViikko ? nykyinenLukuvuosi + 1 : nykyinenLukuvuosi;
+            }
+        }
+
+        function siirryViikolle() {
+            const input = document.getElementById('viikko-input');
+            const viikko = Number(input.value);
+
+            if (isNaN(viikko) || viikko < 1 || viikko > 52) {
+                alert('Anna viikkonumero väliltä 1–52.');
+                return;
+            }
+
+            valittuViikko = viikko;
+            valittuLukuvuodenAloitusVuosi = paataLukuvuosiValitulleViikolle(viikko);
+            suorita(valittuViikko);
+        }
+
+        let resizeTimer = null;
+        function debounceRender() {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                renderoiNykyinenViikkoNopeasti();
+            }, 120);
+        }
+
         window.onload = () => {
             asetaNykyinenViikkoJaLukuvuosi();
             paivitaOpeSuodatin();
@@ -1347,6 +1476,11 @@
             document.getElementById('nykyinen-viikko').addEventListener('click', () => {
                 asetaNykyinenViikkoJaLukuvuosi();
                 suorita(valittuViikko);
+            });
+
+            document.getElementById('siirry-viikolle').addEventListener('click', siirryViikolle);
+            document.getElementById('viikko-input').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') siirryViikolle();
             });
 
             document.getElementById('ope-suodatin').addEventListener('change', (e) => {
@@ -1375,10 +1509,11 @@
             });
 
             document.getElementById('tila-modal-backdrop').addEventListener('click', (e) => {
-                if (e.target.id === 'tila-modal-backdrop') {
-                    suljeTilaModal();
-                }
+                if (e.target.id === 'tila-modal-backdrop') suljeTilaModal();
             });
+
+            window.addEventListener('orientationchange', debounceRender);
+            window.addEventListener('resize', debounceRender);
 
             suorita(valittuViikko);
         };
