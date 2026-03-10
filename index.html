@@ -649,9 +649,11 @@
 
         let valittuViikko = null;
         let csvCache = "";
+        let parsedTapahtumatCache = null;
         let valittuOpettaja = "Kaikki";
         let overridesCache = [];
         let aktiivinenMuokkaus = null;
+        let viimeksiRenderoityViikko = null;
 
         function haeViikkonumero(d) {
             d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
@@ -708,6 +710,39 @@
             return tulos.map(x => x.trim());
         }
 
+        function parsiCsvTapahtumiksi(csvText) {
+            const rivit = csvText.split(/\r?\n/).slice(1).filter(r => r.trim() !== "");
+            const tapahtumat = [];
+
+            rivit.forEach(rivi => {
+                const osat = csvRiviOsiksi(rivi);
+
+                if (osat.length >= 7) {
+                    tapahtumat.push({
+                        ope: osat[0] ? osat[0].trim() : "",
+                        paiva: osat[1] ? osat[1].trim() : "",
+                        alku: osat[2] ? normalisoiAika(osat[2]) : "",
+                        loppu: osat[3] ? normalisoiAika(osat[3]) : "",
+                        ryhma: osat[4] ? osat[4].trim() : "",
+                        kierto: parseInt(osat[5] ? osat[5].trim() : "0", 10),
+                        poikkeus: osat[6] ? osat[6].trim() : ""
+                    });
+                }
+            });
+
+            return tapahtumat;
+        }
+
+        function muodostaPaivatTietorakenteeksi(tapahtumat) {
+            const paivat = {};
+            tapahtumat.forEach(t => {
+                if (!naytetaankoOpettaja(t.ope)) return;
+                if (!paivat[t.paiva]) paivat[t.paiva] = [];
+                paivat[t.paiva].push(t);
+            });
+            return paivat;
+        }
+
         function parseISODate(iso) {
             const [y, m, d] = iso.split('-').map(Number);
             return new Date(y, m - 1, d);
@@ -740,28 +775,28 @@
         }
 
         function viikkoSiirtyma(viikkoNumero, kiertoPituus) {
-    const aloitus = parseISODate(ASETUKSET.lukuvuodenAloitusPvm);
-    aloitus.setHours(0, 0, 0, 0);
+            const aloitus = parseISODate(ASETUKSET.lukuvuodenAloitusPvm);
+            aloitus.setHours(0, 0, 0, 0);
 
-    const viikonPaivamaarat = haeViikonPaivamaarat(viikkoNumero);
-    const kohde = new Date(viikonPaivamaarat["Maanantai"].date);
-    kohde.setHours(0, 0, 0, 0);
+            const viikonPaivamaarat = haeViikonPaivamaarat(viikkoNumero);
+            const kohde = new Date(viikonPaivamaarat["Maanantai"].date);
+            kohde.setHours(0, 0, 0, 0);
 
-    let aktiivisiaViikkoja = 0;
-    const laskuri = new Date(aloitus);
+            let aktiivisiaViikkoja = 0;
+            const laskuri = new Date(aloitus);
 
-    while (laskuri < kohde) {
-        const viikonNumero = haeViikkonumero(laskuri);
+            while (laskuri < kohde) {
+                const viikonNumeroLaskurille = haeViikkonumero(laskuri);
 
-        if (!ASETUKSET.eiKierraViikot.includes(viikonNumero)) {
-            aktiivisiaViikkoja++;
+                if (!ASETUKSET.eiKierraViikot.includes(viikonNumeroLaskurille)) {
+                    aktiivisiaViikkoja++;
+                }
+
+                laskuri.setDate(laskuri.getDate() + 7);
+            }
+
+            return aktiivisiaViikkoja % kiertoPituus;
         }
-
-        laskuri.setDate(laskuri.getDate() + 7);
-    }
-
-    return aktiivisiaViikkoja % kiertoPituus;
-}
 
         function haeOpettajanViikonTila(opettaja, kierto, viikkoNumero) {
             const tilat = tilatKierroksittain[kierto];
@@ -808,68 +843,59 @@
             overridesCache = data.items || [];
         }
 
+        function paivitaOverrideCacheTallennuksenJalkeen(muutos) {
+            const avain = teeOverrideAvain(
+                muutos.viikko,
+                muutos.paiva,
+                muutos.alku,
+                muutos.loppu,
+                muutos.ope
+            );
+
+            overridesCache = overridesCache.filter(item => {
+                const itemAvain = teeOverrideAvain(
+                    item.viikko,
+                    item.paiva,
+                    item.alku,
+                    item.loppu,
+                    item.ope
+                );
+                return itemAvain !== avain;
+            });
+
+            overridesCache.push({
+                viikko: muutos.viikko,
+                paiva: muutos.paiva,
+                alku: muutos.alku,
+                loppu: muutos.loppu,
+                ope: muutos.ope,
+                korvaava_tila: muutos.korvaava_tila,
+                voimassa: true
+            });
+        }
+
+        function poistaOverrideCachesta(muutos) {
+            const avain = teeOverrideAvain(
+                muutos.viikko,
+                muutos.paiva,
+                muutos.alku,
+                muutos.loppu,
+                muutos.ope
+            );
+
+            overridesCache = overridesCache.filter(item => {
+                const itemAvain = teeOverrideAvain(
+                    item.viikko,
+                    item.paiva,
+                    item.alku,
+                    item.loppu,
+                    item.ope
+                );
+                return itemAvain !== avain;
+            });
+        }
+
         function haeManuaalinenTila(viikkoNumero, tunti) {
-            function paivitaOverrideCacheTallennuksenJalkeen(muutos) {
-    ...
-}
-
-function poistaOverrideCachesta(muutos) {
-    ...
-}
-
-function haeManuaalinenTila(viikkoNumero, tunti) {
-    ...
-}
-    const avain = teeOverrideAvain(
-        muutos.viikko,
-        muutos.paiva,
-        muutos.alku,
-        muutos.loppu,
-        muutos.ope
-    );
-
-    overridesCache = overridesCache.filter(item => {
-        const itemAvain = teeOverrideAvain(
-            item.viikko,
-            item.paiva,
-            item.alku,
-            item.loppu,
-            item.ope
-        );
-        return itemAvain !== avain;
-    });
-
-    overridesCache.push({
-        viikko: muutos.viikko,
-        paiva: muutos.paiva,
-        alku: muutos.alku,
-        loppu: muutos.loppu,
-        ope: muutos.ope,
-        korvaava_tila: muutos.korvaava_tila,
-        voimassa: true
-    });
-}
-
-function poistaOverrideCachesta(muutos) {
-    const avain = teeOverrideAvain(
-        muutos.viikko,
-        muutos.paiva,
-        muutos.alku,
-        muutos.loppu,
-        muutos.ope
-    );
-
-    overridesCache = overridesCache.filter(item => {
-        const itemAvain = teeOverrideAvain(
-            item.viikko,
-            item.paiva,
-            item.alku,
-            item.loppu,
-            item.ope
-        );
-        return itemAvain !== avain;
-    });
-}
             const avain = teeOverrideAvain(viikkoNumero, tunti.paiva, tunti.alku, tunti.loppu, tunti.ope);
 
             const match = overridesCache.find(item => {
@@ -906,132 +932,135 @@ function poistaOverrideCachesta(muutos) {
             document.getElementById('modal-uusi-tila').value = '';
         }
 
-     async function tallennaTilaMuutos() {
-    if (!aktiivinenMuokkaus) return;
-
-    const tallennaNappi = document.getElementById('modal-tallenna');
-    const palautaNappi = document.getElementById('modal-palauta');
-    const peruutaNappi = document.getElementById('modal-peruuta');
-
-    const alkuperainenTeksti = tallennaNappi.textContent;
-
-    try {
-        const uusiTila = document.getElementById('modal-uusi-tila').value.trim();
-        if (!uusiTila) {
-            alert('Kirjoita paikka tai käytä "Palauta automaattiseksi".');
-            return;
+        async function renderoiNykyinenViikkoNopeasti() {
+            const viikko = viimeksiRenderoityViikko ?? valittuViikko;
+            await suorita(viikko, { skipOverridesFetch: true });
         }
 
-        tallennaNappi.disabled = true;
-        palautaNappi.disabled = true;
-        peruutaNappi.disabled = true;
-        tallennaNappi.textContent = 'Tallennetaan...';
+        async function tallennaTilaMuutos() {
+            if (!aktiivinenMuokkaus) return;
 
-        const payload = {
-            action: 'saveOverride',
-            viikko: aktiivinenMuokkaus.viikko,
-            paiva: aktiivinenMuokkaus.paiva,
-            alku: aktiivinenMuokkaus.alku,
-            loppu: aktiivinenMuokkaus.loppu,
-            ope: aktiivinenMuokkaus.ope,
-            korvaava_tila: uusiTila
-        };
+            const tallennaNappi = document.getElementById('modal-tallenna');
+            const palautaNappi = document.getElementById('modal-palauta');
+            const peruutaNappi = document.getElementById('modal-peruuta');
 
-        const response = await fetch(appsScriptUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify(payload)
-        });
+            const alkuperainenTeksti = tallennaNappi.textContent;
 
-        if (!response.ok) {
-            throw new Error(`Tallennus epäonnistui. HTTP ${response.status}`);
+            try {
+                const uusiTila = document.getElementById('modal-uusi-tila').value.trim();
+                if (!uusiTila) {
+                    alert('Kirjoita paikka tai käytä "Palauta automaattiseksi".');
+                    return;
+                }
+
+                tallennaNappi.disabled = true;
+                palautaNappi.disabled = true;
+                peruutaNappi.disabled = true;
+                tallennaNappi.textContent = 'Tallennetaan...';
+
+                const payload = {
+                    action: 'saveOverride',
+                    viikko: aktiivinenMuokkaus.viikko,
+                    paiva: aktiivinenMuokkaus.paiva,
+                    alku: aktiivinenMuokkaus.alku,
+                    loppu: aktiivinenMuokkaus.loppu,
+                    ope: aktiivinenMuokkaus.ope,
+                    korvaava_tila: uusiTila
+                };
+
+                const response = await fetch(appsScriptUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Tallennus epäonnistui. HTTP ${response.status}`);
+                }
+
+                const rawText = await response.text();
+
+                let data;
+                try {
+                    data = JSON.parse(rawText);
+                } catch (err) {
+                    throw new Error('Tallennus ei palauttanut JSONia. Vastaus oli: ' + rawText.slice(0, 200));
+                }
+
+                if (!data.ok) {
+                    throw new Error(data.error || 'Tallennus epäonnistui');
+                }
+
+                paivitaOverrideCacheTallennuksenJalkeen(payload);
+                suljeTilaModal();
+                await renderoiNykyinenViikkoNopeasti();
+
+            } finally {
+                tallennaNappi.disabled = false;
+                palautaNappi.disabled = false;
+                peruutaNappi.disabled = false;
+                tallennaNappi.textContent = alkuperainenTeksti;
+            }
         }
 
-        const rawText = await response.text();
+        async function palautaAutomaattiseksi() {
+            if (!aktiivinenMuokkaus) return;
 
-        let data;
-        try {
-            data = JSON.parse(rawText);
-        } catch (err) {
-            throw new Error('Tallennus ei palauttanut JSONia. Vastaus oli: ' + rawText.slice(0, 200));
+            const tallennaNappi = document.getElementById('modal-tallenna');
+            const palautaNappi = document.getElementById('modal-palauta');
+            const peruutaNappi = document.getElementById('modal-peruuta');
+
+            const alkuperainenTeksti = palautaNappi.textContent;
+
+            try {
+                tallennaNappi.disabled = true;
+                palautaNappi.disabled = true;
+                peruutaNappi.disabled = true;
+                palautaNappi.textContent = 'Palautetaan...';
+
+                const payload = {
+                    action: 'clearOverride',
+                    viikko: aktiivinenMuokkaus.viikko,
+                    paiva: aktiivinenMuokkaus.paiva,
+                    alku: aktiivinenMuokkaus.alku,
+                    loppu: aktiivinenMuokkaus.loppu,
+                    ope: aktiivinenMuokkaus.ope
+                };
+
+                const response = await fetch(appsScriptUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Palautus epäonnistui. HTTP ${response.status}`);
+                }
+
+                const rawText = await response.text();
+
+                let data;
+                try {
+                    data = JSON.parse(rawText);
+                } catch (err) {
+                    throw new Error('Palautus ei palauttanut JSONia. Vastaus oli: ' + rawText.slice(0, 200));
+                }
+
+                if (!data.ok) {
+                    throw new Error(data.error || 'Palautus epäonnistui');
+                }
+
+                poistaOverrideCachesta(payload);
+                suljeTilaModal();
+                await renderoiNykyinenViikkoNopeasti();
+
+            } finally {
+                tallennaNappi.disabled = false;
+                palautaNappi.disabled = false;
+                peruutaNappi.disabled = false;
+                palautaNappi.textContent = alkuperainenTeksti;
+            }
         }
-
-        if (!data.ok) {
-            throw new Error(data.error || 'Tallennus epäonnistui');
-        }
-
-        paivitaOverrideCacheTallennuksenJalkeen(payload);
-        suljeTilaModal();
-        await suorita(valittuViikko, { skipOverridesFetch: true });
-
-    } finally {
-        tallennaNappi.disabled = false;
-        palautaNappi.disabled = false;
-        peruutaNappi.disabled = false;
-        tallennaNappi.textContent = alkuperainenTeksti;
-    }
-}
-
-    
-
-       async function palautaAutomaattiseksi() {
-    if (!aktiivinenMuokkaus) return;
-
-    const tallennaNappi = document.getElementById('modal-tallenna');
-    const palautaNappi = document.getElementById('modal-palauta');
-    const peruutaNappi = document.getElementById('modal-peruuta');
-
-    const alkuperainenTeksti = palautaNappi.textContent;
-
-    try {
-        tallennaNappi.disabled = true;
-        palautaNappi.disabled = true;
-        peruutaNappi.disabled = true;
-        palautaNappi.textContent = 'Palautetaan...';
-
-        const payload = {
-            action: 'clearOverride',
-            viikko: aktiivinenMuokkaus.viikko,
-            paiva: aktiivinenMuokkaus.paiva,
-            alku: aktiivinenMuokkaus.alku,
-            loppu: aktiivinenMuokkaus.loppu,
-            ope: aktiivinenMuokkaus.ope
-        };
-
-        const response = await fetch(appsScriptUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify(payload)
-        });
-
-        if (!response.ok) {
-            throw new Error(`Palautus epäonnistui. HTTP ${response.status}`);
-        }
-
-        const rawText = await response.text();
-
-        let data;
-        try {
-            data = JSON.parse(rawText);
-        } catch (err) {
-            throw new Error('Palautus ei palauttanut JSONia. Vastaus oli: ' + rawText.slice(0, 200));
-        }
-
-        if (!data.ok) {
-            throw new Error(data.error || 'Palautus epäonnistui');
-        }
-
-        poistaOverrideCachesta(payload);
-        suljeTilaModal();
-        await suorita(valittuViikko, { skipOverridesFetch: true });
-
-    } finally {
-        tallennaNappi.disabled = false;
-        palautaNappi.disabled = false;
-        peruutaNappi.disabled = false;
-        palautaNappi.textContent = alkuperainenTeksti;
-    }
-}
 
         function teeYhteenvetoKortti(otsikko, kierto, viikkoNumero) {
             const wrap = document.createElement('div');
@@ -1069,52 +1098,33 @@ function poistaOverrideCachesta(muutos) {
             return wrap;
         }
 
-                
         async function suorita(viikkoNumero = null, options = {}) {
-    const { skipOverridesFetch = false } = options; 
+            const { skipOverridesFetch = false } = options;
+
             try {
                 if (!csvCache) {
                     const response = await fetch(sheetUrl + '&t=' + Date.now());
                     csvCache = await response.text();
                 }
 
-                if (!skipOverridesFetch) {     await haeTilamuutokset(); }
+                if (!parsedTapahtumatCache) {
+                    parsedTapahtumatCache = parsiCsvTapahtumiksi(csvCache);
+                }
 
-                const csvText = csvCache;
+                if (!skipOverridesFetch) {
+                    await haeTilamuutokset();
+                }
 
                 if (viikkoNumero === null) {
                     viikkoNumero = haeViikkonumero(new Date());
                 }
 
-                const viikonPaivamaarat = haeViikonPaivamaarat(viikkoNumero);
+                viimeksiRenderoityViikko = viikkoNumero;
 
+                const viikonPaivamaarat = haeViikonPaivamaarat(viikkoNumero);
                 document.getElementById('viikko-naytto').textContent = `Viikko ${viikkoNumero}`;
 
-                const rivit = csvText.split(/\r?\n/).slice(1).filter(r => r.trim() !== "");
-                const tapahtumat = [];
-
-                rivit.forEach(rivi => {
-                    const osat = csvRiviOsiksi(rivi);
-
-                    if (osat.length >= 7) {
-                        tapahtumat.push({
-                            ope: osat[0] ? osat[0].trim() : "",
-                            paiva: osat[1] ? osat[1].trim() : "",
-                            alku: osat[2] ? normalisoiAika(osat[2]) : "",
-                            loppu: osat[3] ? normalisoiAika(osat[3]) : "",
-                            ryhma: osat[4] ? osat[4].trim() : "",
-                            kierto: parseInt(osat[5] ? osat[5].trim() : "0", 10),
-                            poikkeus: osat[6] ? osat[6].trim() : ""
-                        });
-                    }
-                });
-
-                const paivat = {};
-                tapahtumat.forEach(t => {
-                    if (!naytetaankoOpettaja(t.ope)) return;
-                    if (!paivat[t.paiva]) paivat[t.paiva] = [];
-                    paivat[t.paiva].push(t);
-                });
+                const paivat = muodostaPaivatTietorakenteeksi(parsedTapahtumatCache);
 
                 const yhteenvetoDiv = document.getElementById('viikkoyhteenveto');
                 yhteenvetoDiv.innerHTML = '';
@@ -1138,7 +1148,9 @@ function poistaOverrideCachesta(muutos) {
 
                     loytyiSisaltoa = true;
 
-                    paivanTunnit.sort((a, b) => {
+                    const paivanTunnitKopio = [...paivanTunnit];
+
+                    paivanTunnitKopio.sort((a, b) => {
                         const aikaEro = aikaMinuuteiksi(a.alku) - aikaMinuuteiksi(b.alku);
                         if (aikaEro !== 0) return aikaEro;
                         if ((a.kierto || 0) !== (b.kierto || 0)) return (a.kierto || 0) - (b.kierto || 0);
@@ -1146,7 +1158,7 @@ function poistaOverrideCachesta(muutos) {
                     });
 
                     const blokit = {};
-                    paivanTunnit.forEach(t => {
+                    paivanTunnitKopio.forEach(t => {
                         const avain = `${t.alku}|${t.loppu}|${t.kierto > 0 ? t.kierto : "vapaa"}`;
                         if (!blokit[avain]) blokit[avain] = [];
                         blokit[avain].push(t);
@@ -1167,7 +1179,7 @@ function poistaOverrideCachesta(muutos) {
                     paivaSarake.innerHTML = `<div class="sarake-otsikko">${viikonPaivamaarat[paiva]?.lyhytPaiva || paiva}<br><span class="sarake-pvm">${viikonPaivamaarat[paiva]?.teksti || ''}</span></div>`;
 
                     lajitellutAvaimet.forEach(avain => {
-                        const blokkiTunnit = blokit[avain];
+                        const blokkiTunnit = [...blokit[avain]];
                         const eka = blokkiTunnit[0];
 
                         const kiertoTyyppi = eka.kierto;
