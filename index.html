@@ -629,24 +629,9 @@
     </div>
 
     <script>
-          /*
+        /*
         ============================================================
         YLLÄPITOASETUKSET – MUOKKAA VAIN TÄTÄ BLOKKIA TARVITTAESSA
-        ============================================================
-
-        1) sheetUrl = julkaistu CSV-linkki
-        2) appsScriptUrl = Apps Script web app /exec -osoite
-        3) opettajat = nimet täsmälleen siinä muodossa kuin Sheetissä
-        4) aloitusViikko = se viikko, josta lukuvuoden kierto alkaa
-        5) lukuvuodenAloitusKuukausiPaiva = muodossa KK-PP, esim. 08-10
-        6) eiKierraViikot = lomaviikot, joilla kierto ei etene
-        7) lahtoTilat:
-            - 2: 2-kierron opettajakohtaiset aloituspaikat
-            - 3: 3-kierron opettajakohtaiset aloituspaikat
-            - 4: 4-kierron opettajakohtaiset aloituspaikat
-
-        Opettajien järjestys ratkaisee kaiken:
-        ensimmäinen nimi vastaa aina ensimmäistä paikkaa, toinen toista jne.
         ============================================================
         */
 
@@ -694,6 +679,7 @@
         let groupedBaseCache = null;
         let valittuOpettaja = "Kaikki";
         let overridesCache = [];
+        let overridesLoaded = false;
         let aktiivinenMuokkaus = null;
         let viimeksiRenderoityViikko = null;
         let viikonTilaCache = new Map();
@@ -923,7 +909,9 @@
                 .join('|');
         }
 
-        async function haeTilamuutokset() {
+        async function haeTilamuutokset(force = false) {
+            if (overridesLoaded && !force) return;
+
             const response = await fetch(appsScriptUrl + '?action=getOverrides&t=' + Date.now(), {
                 method: 'GET',
                 cache: 'no-store'
@@ -941,6 +929,7 @@
             if (!data.ok) throw new Error(data.error || 'Tilamuutosten haku epäonnistui');
 
             overridesCache = data.items || [];
+            overridesLoaded = true;
             tyhjennaViikkoCache();
         }
 
@@ -1350,7 +1339,9 @@
                 if (!parsedTapahtumatCache) parsedTapahtumatCache = parsiCsvTapahtumiksi(csvCache);
                 if (!groupedBaseCache) groupedBaseCache = rakennaGroupedBaseCache(parsedTapahtumatCache);
 
-                if (!skipOverridesFetch) await haeTilamuutokset();
+                if (!skipOverridesFetch && !overridesLoaded) {
+                    await haeTilamuutokset();
+                }
 
                 if (viikkoNumero === null) viikkoNumero = haeViikkonumero(new Date());
 
@@ -1428,13 +1419,7 @@
         function paataLukuvuosiValitulleViikolle(viikko) {
             const nykyinen = new Date();
             const nykyinenLukuvuosi = haeLukuvuodenAloitusVuosiPaivasta(nykyinen);
-            const nykyinenViikko = haeViikkonumero(nykyinen);
-
-            if (nykyinenViikko >= ASETUKSET.aloitusViikko) {
-                return viikko < ASETUKSET.aloitusViikko ? nykyinenLukuvuosi + 1 : nykyinenLukuvuosi;
-            } else {
-                return viikko < ASETUKSET.aloitusViikko ? nykyinenLukuvuosi + 1 : nykyinenLukuvuosi;
-            }
+            return viikko < ASETUKSET.aloitusViikko ? nykyinenLukuvuosi + 1 : nykyinenLukuvuosi;
         }
 
         function siirryViikolle() {
@@ -1448,7 +1433,7 @@
 
             valittuViikko = viikko;
             valittuLukuvuodenAloitusVuosi = paataLukuvuosiValitulleViikolle(viikko);
-            suorita(valittuViikko);
+            suorita(valittuViikko, { skipOverridesFetch: true });
         }
 
         let resizeTimer = null;
@@ -1465,17 +1450,17 @@
 
             document.getElementById('edellinen-viikko').addEventListener('click', () => {
                 edellinenViikko();
-                suorita(valittuViikko);
+                suorita(valittuViikko, { skipOverridesFetch: true });
             });
 
             document.getElementById('seuraava-viikko').addEventListener('click', () => {
                 seuraavaViikko();
-                suorita(valittuViikko);
+                suorita(valittuViikko, { skipOverridesFetch: true });
             });
 
             document.getElementById('nykyinen-viikko').addEventListener('click', () => {
                 asetaNykyinenViikkoJaLukuvuosi();
-                suorita(valittuViikko);
+                suorita(valittuViikko, { skipOverridesFetch: true });
             });
 
             document.getElementById('siirry-viikolle').addEventListener('click', siirryViikolle);
@@ -1485,7 +1470,7 @@
 
             document.getElementById('ope-suodatin').addEventListener('change', (e) => {
                 valittuOpettaja = e.target.value;
-                suorita(valittuViikko);
+                suorita(valittuViikko, { skipOverridesFetch: true });
             });
 
             document.getElementById('modal-tallenna').addEventListener('click', async () => {
@@ -1513,9 +1498,11 @@
             });
 
             window.addEventListener('orientationchange', debounceRender);
-            window.addEventListener('resize', debounceRender);
 
-            suorita(valittuViikko);
+            (async () => {
+                await haeTilamuutokset();
+                await suorita(valittuViikko, { skipOverridesFetch: true });
+            })();
         };
     </script>
 </body>
