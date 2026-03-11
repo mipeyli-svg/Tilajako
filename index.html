@@ -730,7 +730,26 @@
             </div>
         </div>
     </div>
+   /*
+        ============================================================
+        YLLÄPITOASETUKSET – MUOKKAA VAIN TÄTÄ BLOKKIA TARVITTAESSA
+        ============================================================
 
+        1) sheetUrl = julkaistu CSV-linkki
+        2) appsScriptUrl = Apps Script web app /exec -osoite
+        3) opettajat = nimet täsmälleen siinä muodossa kuin Sheetissä
+        4) aloitusViikko = se viikko, josta lukuvuoden kierto alkaa
+        5) lukuvuodenAloitusKuukausiPaiva = muodossa KK-PP, esim. 08-10
+        6) eiKierraViikot = lomaviikot, joilla kierto ei etene
+        7) lahtoTilat:
+            - 2: 2-kierron opettajakohtaiset aloituspaikat
+            - 3: 3-kierron opettajakohtaiset aloituspaikat
+            - 4: 4-kierron opettajakohtaiset aloituspaikat
+
+        Opettajien järjestys ratkaisee kaiken:
+        ensimmäinen nimi vastaa aina ensimmäistä paikkaa, toinen toista jne.
+        ============================================================
+        */
     <script>
         const YLLAPITO_ASETUKSET = {
             sheetUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRNc9D23NHyoU0H5tLM86bd5w-7E318BH0RLa3SLcgy1xmkENyDY6yCliA64Iyagsff6SYAFAwlQKfp/pub?output=csv',
@@ -738,8 +757,8 @@
 
             opettajat: ["Mypi", "Hanna", "Päivi", "Jenni", "Tuomas"],
 
-            aloitusViikko: 32,
-            lukuvuodenAloitusKuukausiPaiva: '08-10',
+            aloitusViikko: 7,
+            lukuvuodenAloitusKuukausiPaiva: '02-09',
             eiKierraViikot: [42, 52, 1, 8],
 
             lahtoTilat: {
