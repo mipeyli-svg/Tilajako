@@ -1674,9 +1674,9 @@
             let loppuviikko = alkuviikko + viikkomaarat - 1;
             while (loppuviikko > 52) loppuviikko -= 52;
 
-            let teksti = `Liikunnan paikat ryhmälle ${ryhma}, opettaja ${opettaja}, viikoille ${alkuviikko}–${loppuviikko}\n\n`;
+            let teksti = `Liikuntapaikat ryhmälle ${ryhma}, opettaja ${opettaja}, viikoille ${alkuviikko}–${loppuviikko}\n\n`;
             teksti += `Hei,\n`;
-            teksti += `tässä ryhmän ${ryhma} liikunnan paikat seuraaville viikoille.\n\n`;
+            teksti += `tässä ryhmän ${ryhma} liikuntapaikat seuraaville viikoille.\n\n`;
 
             for (let i = 0; i < viikkomaarat; i++) {
                 const tunnit = haeRyhmanTunnitViikolle(opettaja, ryhma, viikko);
