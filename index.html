@@ -484,6 +484,49 @@
             margin-top: 10px;
         }
 
+        .massamuutos-lista-wrap {
+            margin-top: 16px;
+            text-align: left;
+        }
+
+        .massamuutos-rivi {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 10px 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            background: white;
+            margin-bottom: 8px;
+        }
+
+        .massamuutos-rivi input[type="checkbox"] {
+            margin-top: 3px;
+            transform: scale(1.15);
+        }
+
+        .massamuutos-sisalto {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            line-height: 1.35;
+        }
+
+        .massamuutos-paikka {
+            font-weight: 700;
+            color: #374151;
+        }
+
+        .massamuutos-tyhja {
+            background: white;
+            padding: 14px;
+            border-radius: 12px;
+            color: #6b7280;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            margin-top: 12px;
+        }
+
         @media (min-width: 900px) {
             .yhteenveto-wrap {
                 grid-template-columns: 1fr 1fr 1fr;
@@ -644,6 +687,7 @@
 
             <div class="top-tools">
                 <button id="avaa-wilma" class="secondary-btn">Wilma-kooste</button>
+                <button id="avaa-massamuutos" class="secondary-btn">Muuta useita tunteja</button>
             </div>
 
             <div class="viikko-ohjaus">
@@ -710,6 +754,47 @@
         </div>
     </div>
 
+    <div id="massamuutos-screen" class="hidden">
+        <div class="wilma-wrap">
+            <div class="wilma-panel">
+                <h2>Usean tunnin paikkamuutos</h2>
+
+                <div class="top-tools">
+                    <button id="takaisin-massamuutoksesta" class="secondary-btn">← Takaisin kalenteriin</button>
+                </div>
+
+                <div class="wilma-controls">
+                    <label for="massamuutos-ope">Opettaja:</label>
+                    <select id="massamuutos-ope"></select>
+
+                    <label for="massamuutos-viikko">Viikko:</label>
+                    <input id="massamuutos-viikko" type="number" min="1" max="52">
+
+                    <button id="hae-massamuutos-tunnit">Hae viikon tunnit</button>
+                </div>
+
+                <div class="top-tools">
+                    <button id="massamuutos-valitse-kaikki" class="secondary-btn">Valitse kaikki</button>
+                    <button id="massamuutos-poista-kaikki" class="secondary-btn">Poista valinnat</button>
+                    <button id="massamuutos-valitse-muualla" class="secondary-btn">Valitse vain Muualla-tunnit</button>
+                </div>
+
+                <div id="massamuutos-lista" class="wilma-output"></div>
+
+                <div class="wilma-controls">
+                    <label for="massamuutos-uusi-paikka">Uusi paikka:</label>
+                    <input id="massamuutos-uusi-paikka" type="text" placeholder="Esim. Uimahalli">
+
+                    <button id="tallenna-massamuutos">Tallenna valitut</button>
+                </div>
+
+                <div class="wilma-help">
+                    Valitse viikon tunnit, kirjoita uusi paikka ja tallenna kaikki valitut yhdellä kertaa.
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="tila-modal-backdrop" class="tila-modal-backdrop hidden">
         <div class="tila-modal">
             <div class="tila-modal-otsikko">Muuta paikkaa</div>
@@ -730,37 +815,29 @@
             </div>
         </div>
     </div>
-   
+
     <script>
-        /*
-        ============================================================
-        YLLÄPITOASETUKSET – MUOKKAA VAIN TÄTÄ BLOKKIA TARVITTAESSA
-        ============================================================
-
-        1) sheetUrl = julkaistu CSV-linkki
-        2) appsScriptUrl = Apps Script web app /exec -osoite
-        3) opettajat = nimet täsmälleen siinä muodossa kuin Sheetissä
-        4) aloitusViikko = se viikko, josta lukuvuoden kierto alkaa
-        5) lukuvuodenAloitusKuukausiPaiva = muodossa KK-PP, esim. 08-10
-        6) eiKierraViikot = lomaviikot, joilla kierto ei etene
-        7) lahtoTilat:
-            - 2: 2-kierron opettajakohtaiset aloituspaikat
-            - 3: 3-kierron opettajakohtaiset aloituspaikat
-            - 4: 4-kierron opettajakohtaiset aloituspaikat
-
-        Opettajien järjestys ratkaisee kaiken:
-        ensimmäinen nimi vastaa aina ensimmäistä paikkaa, toinen toista jne.
-        ============================================================
-        */
         const YLLAPITO_ASETUKSET = {
             sheetUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRNc9D23NHyoU0H5tLM86bd5w-7E318BH0RLa3SLcgy1xmkENyDY6yCliA64Iyagsff6SYAFAwlQKfp/pub?output=csv',
             appsScriptUrl: 'https://script.google.com/macros/s/AKfycbzV0h8icVctrXg9ykg83eaukyZZJauOEXiHBbapCV5PoUUtHwtpj-yuleowVtGnuoUO/exec',
 
             opettajat: ["Mypi", "Hanna", "Päivi", "Jenni", "Tuomas"],
 
-            aloitusViikko: 48,
-            lukuvuodenAloitusKuukausiPaiva: '11-24',
+            aloitusViikko: 32,
+            lukuvuodenAloitusKuukausiPaiva: '08-10',
             eiKierraViikot: [42, 52, 1, 8],
+
+            wilmaViesti: {
+                otsikko: ({ ryhma, opettaja, alkuviikko, loppuviikko }) =>
+                    `Liikunnan paikat ryhmälle ${ryhma}, opettaja ${opettaja}, viikoille ${alkuviikko}–${loppuviikko}`,
+
+                aloitus: ({ ryhma }) =>
+                    `Hei,\n` +
+                    `tässä ryhmän ${ryhma} liikunnan paikat seuraaville viikoille.`,
+
+                viikkoIlmanTunteja: `- Ei liikuntatunteja`,
+                lopetus: `Mahdollisista muutoksista tiedotetaan Wilmassa.`
+            },
 
             lahtoTilat: {
                 2: ["Yläsali", "Alasali", "Alasali", "Yläsali", "Alasali"],
@@ -1546,6 +1623,20 @@
             }
         }
 
+        function paivitaMassamuutosOpettajat() {
+            const select = document.getElementById('massamuutos-ope');
+            const opettajat = [...new Set((parsedTapahtumatCache || []).map(t => t.ope).filter(Boolean))]
+                .sort((a, b) => a.localeCompare(b, 'fi'));
+
+            select.innerHTML = '';
+            opettajat.forEach(ope => {
+                const option = document.createElement('option');
+                option.value = ope;
+                option.textContent = ope;
+                select.appendChild(option);
+            });
+        }
+
         function asetaNykyinenViikkoJaLukuvuosi() {
             const tanaan = new Date();
             valittuViikko = haeViikkonumero(tanaan);
@@ -1603,11 +1694,65 @@
             document.getElementById('calendar-screen').classList.remove('hidden');
         }
 
+        function avaaMassamuutosNakyma() {
+            document.getElementById('calendar-screen').classList.add('hidden');
+            document.getElementById('massamuutos-screen').classList.remove('hidden');
+            document.getElementById('massamuutos-viikko').value = valittuViikko;
+            document.getElementById('massamuutos-uusi-paikka').value = '';
+            renderoiMassamuutosLista([]);
+        }
+
+        function suljeMassamuutosNakyma() {
+            document.getElementById('massamuutos-screen').classList.add('hidden');
+            document.getElementById('calendar-screen').classList.remove('hidden');
+        }
+
         function haeRyhmanTunnitViikolle(opettaja, ryhma, viikkoNumero) {
             const viikonPaivamaarat = haeViikonPaivamaarat(viikkoNumero);
 
             return (parsedTapahtumatCache || [])
                 .filter(t => t.ope === opettaja && t.ryhma === ryhma)
+                .map(tunti => {
+                    const kiertoTyyppi = tunti.kierto;
+                    const onkoVapaa = !kiertoTyyppi || isNaN(kiertoTyyppi) || kiertoTyyppi === 0;
+
+                    let paikka = '';
+                    const manuaalinenTila = haeManuaalinenTila(viikkoNumero, tunti);
+
+                    if (manuaalinenTila) {
+                        paikka = manuaalinenTila;
+                    } else if (tunti.poikkeus) {
+                        paikka = tunti.poikkeus;
+                    } else if (onkoVapaa) {
+                        paikka = 'Sopivat keskenään';
+                    } else if (kiertoTyyppi === 2 || kiertoTyyppi === 3 || kiertoTyyppi === 4) {
+                        paikka = haeOpettajanViikonTila(tunti.ope, kiertoTyyppi, viikkoNumero) || '—';
+                    } else {
+                        const tilat = tilatKierroksittain[kiertoTyyppi] || ['—'];
+                        const indeksi = Math.max(0, haeOpettajaIndeksi(tunti.ope)) % tilat.length;
+                        paikka = tilat[indeksi] || '—';
+                    }
+
+                    return {
+                        ...tunti,
+                        paikka,
+                        pvm: viikonPaivamaarat[tunti.paiva]?.date || null
+                    };
+                })
+                .sort((a, b) => {
+                    if (a.pvm && b.pvm) {
+                        const d = a.pvm - b.pvm;
+                        if (d !== 0) return d;
+                    }
+                    return aikaMinuuteiksi(a.alku) - aikaMinuuteiksi(b.alku);
+                });
+        }
+
+        function haeOpettajanTunnitViikolleMassamuutokseen(opettaja, viikkoNumero) {
+            const viikonPaivamaarat = haeViikonPaivamaarat(viikkoNumero);
+
+            return (parsedTapahtumatCache || [])
+                .filter(t => t.ope === opettaja)
                 .map(tunti => {
                     const kiertoTyyppi = tunti.kierto;
                     const onkoVapaa = !kiertoTyyppi || isNaN(kiertoTyyppi) || kiertoTyyppi === 0;
@@ -1674,9 +1819,21 @@
             let loppuviikko = alkuviikko + viikkomaarat - 1;
             while (loppuviikko > 52) loppuviikko -= 52;
 
-            let teksti = `Liikuntapaikat ryhmälle ${ryhma}, opettaja ${opettaja}, viikoille ${alkuviikko}–${loppuviikko}\n\n`;
-            teksti += `Hei,\n`;
-            teksti += `tässä ryhmän ${ryhma} liikuntapaikat seuraaville viikoille.\n\n`;
+            const viestiAsetukset = ASETUKSET.wilmaViesti || {};
+
+            const otsikko = typeof viestiAsetukset.otsikko === 'function'
+                ? viestiAsetukset.otsikko({ ryhma, opettaja, alkuviikko, loppuviikko })
+                : `Liikunnan paikat ryhmälle ${ryhma}, opettaja ${opettaja}, viikoille ${alkuviikko}–${loppuviikko}`;
+
+            const aloitus = typeof viestiAsetukset.aloitus === 'function'
+                ? viestiAsetukset.aloitus({ ryhma, opettaja, alkuviikko, loppuviikko })
+                : `Hei,\n` +
+                  `tässä ryhmän ${ryhma} liikunnan paikat seuraaville viikoille.`;
+
+            const viikkoIlmanTunteja = viestiAsetukset.viikkoIlmanTunteja || '- Ei liikuntatunteja';
+            const lopetus = viestiAsetukset.lopetus || 'Mahdollisista muutoksista tiedotetaan Wilmassa.';
+
+            let teksti = `${otsikko}\n\n${aloitus}\n\n`;
 
             for (let i = 0; i < viikkomaarat; i++) {
                 const tunnit = haeRyhmanTunnitViikolle(opettaja, ryhma, viikko);
@@ -1684,7 +1841,7 @@
                 teksti += `Viikko ${viikko}\n`;
 
                 if (!tunnit.length) {
-                    teksti += `- Ei liikuntatunteja\n\n`;
+                    teksti += `${viikkoIlmanTunteja}\n\n`;
                 } else {
                     tunnit.forEach(tunti => {
                         const pvmTeksti = tunti.pvm ? muodostaPvmJaPaiva(tunti.pvm) : tunti.paiva;
@@ -1697,7 +1854,7 @@
                 if (viikko > 52) viikko = 1;
             }
 
-            teksti += `Mahdollisista muutoksista tiedotetaan Wilmassa.`;
+            teksti += lopetus;
 
             document.getElementById('wilma-teksti').value = teksti;
         }
@@ -1717,6 +1874,184 @@
                 area.select();
                 area.setSelectionRange(0, 99999);
                 alert('Valmis teksti valittiin. Kopioi se itse.');
+            }
+        }
+
+        function renderoiMassamuutosLista(tunnit) {
+            const container = document.getElementById('massamuutos-lista');
+            container.innerHTML = '';
+
+            if (!tunnit.length) {
+                const div = document.createElement('div');
+                div.className = 'massamuutos-tyhja';
+                div.textContent = 'Tälle opettajalle ei löytynyt tunteja valitulla viikolla.';
+                container.appendChild(div);
+                return;
+            }
+
+            const wrap = document.createElement('div');
+            wrap.className = 'massamuutos-lista-wrap';
+
+            tunnit.forEach((tunti, index) => {
+                const row = document.createElement('label');
+                row.className = 'massamuutos-rivi';
+
+                const onMuualla = String(tunti.paikka || '').toLowerCase().includes('muualla');
+
+                row.innerHTML = `
+                    <input type="checkbox" class="massamuutos-checkbox"
+                        data-index="${index}"
+                        data-paiva="${tunti.paiva}"
+                        data-alku="${tunti.alku}"
+                        data-loppu="${tunti.loppu}"
+                        data-ope="${tunti.ope}">
+                    <div class="massamuutos-sisalto">
+                        <div><strong>${tunti.pvm ? muodostaPvmJaPaiva(tunti.pvm) : tunti.paiva}</strong> klo ${tunti.alku}–${tunti.loppu}</div>
+                        <div>${tunti.ryhma}</div>
+                        <div class="massamuutos-paikka">Nykyinen paikka: ${tunti.paikka}</div>
+                        <div>${onMuualla ? 'Muualla-tunti' : ''}</div>
+                    </div>
+                `;
+
+                if (onMuualla) row.dataset.muualla = 'true';
+                wrap.appendChild(row);
+            });
+
+            container.appendChild(wrap);
+        }
+
+        function haeMassamuutosCheckboxit() {
+            return [...document.querySelectorAll('.massamuutos-checkbox')];
+        }
+
+        function valitseKaikkiMassamuutoksessa() {
+            haeMassamuutosCheckboxit().forEach(cb => cb.checked = true);
+        }
+
+        function poistaKaikkiValinnatMassamuutoksessa() {
+            haeMassamuutosCheckboxit().forEach(cb => cb.checked = false);
+        }
+
+        function valitseVainMuuallaMassamuutoksessa() {
+            const rivit = [...document.querySelectorAll('.massamuutos-rivi')];
+            rivit.forEach(rivi => {
+                const cb = rivi.querySelector('.massamuutos-checkbox');
+                cb.checked = rivi.dataset.muualla === 'true';
+            });
+        }
+
+        function haeValitutMassamuutosTunnit() {
+            const viikkoNumero = Number(document.getElementById('massamuutos-viikko').value);
+            const opettaja = document.getElementById('massamuutos-ope').value;
+            const kaikkiTunnit = haeOpettajanTunnitViikolleMassamuutokseen(opettaja, viikkoNumero);
+            const checkboxit = haeMassamuutosCheckboxit();
+
+            return checkboxit
+                .filter(cb => cb.checked)
+                .map(cb => kaikkiTunnit[Number(cb.dataset.index)])
+                .filter(Boolean);
+        }
+
+        async function haeMassamuutosTunnitJaRenderoi() {
+            const opettaja = document.getElementById('massamuutos-ope').value;
+            const viikkoNumero = Number(document.getElementById('massamuutos-viikko').value);
+
+            if (!opettaja) {
+                alert('Valitse opettaja.');
+                return;
+            }
+
+            if (isNaN(viikkoNumero) || viikkoNumero < 1 || viikkoNumero > 52) {
+                alert('Anna viikkonumero väliltä 1–52.');
+                return;
+            }
+
+            const tunnit = haeOpettajanTunnitViikolleMassamuutokseen(opettaja, viikkoNumero);
+            renderoiMassamuutosLista(tunnit);
+        }
+
+        async function tallennaMassamuutos() {
+            const uusiPaikka = document.getElementById('massamuutos-uusi-paikka').value.trim();
+            const viikkoNumero = Number(document.getElementById('massamuutos-viikko').value);
+            const valitut = haeValitutMassamuutosTunnit();
+
+            if (!uusiPaikka) {
+                alert('Kirjoita uusi paikka.');
+                return;
+            }
+
+            if (!valitut.length) {
+                alert('Valitse vähintään yksi tunti.');
+                return;
+            }
+
+            const yhteenveto = valitut
+                .slice(0, 8)
+                .map(t => `${t.pvm ? muodostaPvmJaPaiva(t.pvm) : t.paiva} klo ${t.alku}–${t.loppu}`)
+                .join('\n');
+
+            const ok = confirm(
+                `Muutetaan ${valitut.length} tuntia paikaksi "${uusiPaikka}".\n\n${yhteenveto}${valitut.length > 8 ? '\n...' : ''}`
+            );
+
+            if (!ok) return;
+
+            const payload = {
+                action: 'saveMultipleOverrides',
+                items: valitut.map(tunti => ({
+                    viikko: viikkoNumero,
+                    paiva: tunti.paiva,
+                    alku: tunti.alku,
+                    loppu: tunti.loppu,
+                    ope: tunti.ope,
+                    korvaava_tila: uusiPaikka
+                }))
+            };
+
+            const button = document.getElementById('tallenna-massamuutos');
+            const originalText = button.textContent;
+
+            try {
+                button.disabled = true;
+                button.textContent = 'Tallennetaan...';
+
+                const response = await fetch(appsScriptUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Massatallennus epäonnistui. HTTP ${response.status}`);
+                }
+
+                const rawText = await response.text();
+                let data;
+
+                try {
+                    data = JSON.parse(rawText);
+                } catch (err) {
+                    throw new Error('Massatallennus ei palauttanut JSONia. Vastaus oli: ' + rawText.slice(0, 200));
+                }
+
+                if (!data.ok) {
+                    throw new Error(data.error || 'Massatallennus epäonnistui');
+                }
+
+                payload.items.forEach(item => {
+                    paivitaOverrideCacheTallennuksenJalkeen(item);
+                });
+
+                await haeMassamuutosTunnitJaRenderoi();
+
+                if (viikkoNumero === valittuViikko) {
+                    await renderoiNykyinenViikkoNopeasti();
+                }
+
+                alert(`Tallennettiin ${payload.items.length} tuntia.`);
+            } finally {
+                button.disabled = false;
+                button.textContent = originalText;
             }
         }
 
@@ -1788,21 +2123,40 @@
                 paivitaWilmaRyhmat();
             });
 
+            document.getElementById('avaa-massamuutos').addEventListener('click', avaaMassamuutosNakyma);
+            document.getElementById('takaisin-massamuutoksesta').addEventListener('click', suljeMassamuutosNakyma);
+            document.getElementById('hae-massamuutos-tunnit').addEventListener('click', haeMassamuutosTunnitJaRenderoi);
+            document.getElementById('massamuutos-valitse-kaikki').addEventListener('click', valitseKaikkiMassamuutoksessa);
+            document.getElementById('massamuutos-poista-kaikki').addEventListener('click', poistaKaikkiValinnatMassamuutoksessa);
+            document.getElementById('massamuutos-valitse-muualla').addEventListener('click', valitseVainMuuallaMassamuutoksessa);
+            document.getElementById('tallenna-massamuutos').addEventListener('click', async () => {
+                try {
+                    await tallennaMassamuutos();
+                } catch (err) {
+                    alert(err.message);
+                }
+            });
+
             window.addEventListener('orientationchange', debounceRender);
 
             (async () => {
                 await haeTilamuutokset();
+
                 if (!csvCache) {
                     const response = await fetch(sheetUrl + '&t=' + Date.now());
                     csvCache = await response.text();
                 }
+
                 if (!parsedTapahtumatCache) parsedTapahtumatCache = parsiCsvTapahtumiksi(csvCache);
                 if (!groupedBaseCache) groupedBaseCache = rakennaGroupedBaseCache(parsedTapahtumatCache);
 
                 paivitaWilmaOpettajat();
                 paivitaWilmaRyhmat();
+                paivitaMassamuutosOpettajat();
 
                 document.getElementById('wilma-alkuviikko').value = valittuViikko;
+                document.getElementById('massamuutos-viikko').value = valittuViikko;
+
                 await suorita(valittuViikko, { skipOverridesFetch: true });
             })();
         };
