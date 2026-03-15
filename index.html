@@ -1810,74 +1810,64 @@
         }
 
         function muodostaWilmaViesti() {
-            const opettaja = document.getElementById('wilma-ope').value;
-            const ryhma = document.getElementById('wilma-ryhma').value;
-            const alkuviikko = Number(document.getElementById('wilma-alkuviikko').value);
-            const viikkomaarat = Number(document.getElementById('wilma-viikkomaarat').value);
+    const opettaja = document.getElementById('wilma-ope').value;
+    const ryhma = document.getElementById('wilma-ryhma').value;
+    const alkuviikko = Number(document.getElementById('wilma-alkuviikko').value);
+    const viikkomaarat = Number(document.getElementById('wilma-viikkomaarat').value);
 
-            if (!opettaja) {
-                alert('Valitse opettaja.');
-                return;
-            }
+    if (!opettaja) {
+        alert('Valitse opettaja.');
+        return;
+    }
 
-            if (!ryhma) {
-                alert('Valitse ryhmä.');
-                return;
-            }
+    if (!ryhma) {
+        alert('Valitse ryhmä.');
+        return;
+    }
 
-            if (isNaN(alkuviikko) || alkuviikko < 1 || alkuviikko > 52) {
-                alert('Anna alkuviikko väliltä 1–52.');
-                return;
-            }
+    if (isNaN(alkuviikko) || alkuviikko < 1 || alkuviikko > 52) {
+        alert('Anna alkuviikko väliltä 1–52.');
+        return;
+    }
 
-            if (isNaN(viikkomaarat) || viikkomaarat < 1 || viikkomaarat > 30) {
-                alert('Anna viikkomäärä väliltä 1–30.');
-                return;
-            }
+    if (isNaN(viikkomaarat) || viikkomaarat < 1 || viikkomaarat > 30) {
+        alert('Anna viikkomäärä väliltä 1–30.');
+        return;
+    }
 
-            let viikko = alkuviikko;
-            let loppuviikko = alkuviikko + viikkomaarat - 1;
-            while (loppuviikko > 52) loppuviikko -= 52;
+    let viikko = alkuviikko;
+    const rivit = [];
 
-            const viestiAsetukset = ASETUKSET.wilmaViesti || {};
+    rivit.push([
+        'Vko',
+        'Päivä / aika',
+        'Liikuntatunnin aihe/paikka',
+        'Kokoontuminen',
+        'Muuta huomioitavaa'
+    ].join('\t'));
 
-            const otsikko = typeof viestiAsetukset.otsikko === 'function'
-                ? viestiAsetukset.otsikko({ ryhma, opettaja, alkuviikko, loppuviikko })
-                : `Liikunnan paikat ryhmälle ${ryhma}, opettaja ${opettaja}, viikoille ${alkuviikko}–${loppuviikko}`;
+    for (let i = 0; i < viikkomaarat; i++) {
+        const tunnit = haeRyhmanTunnitViikolle(opettaja, ryhma, viikko);
 
-            const aloitus = typeof viestiAsetukset.aloitus === 'function'
-                ? viestiAsetukset.aloitus({ ryhma, opettaja, alkuviikko, loppuviikko })
-                : `Hei,\n` +
-                  `tässä ryhmän ${ryhma} liikunnan paikat seuraaville viikoille.`;
+        tunnit.forEach(tunti => {
+            const pvmTeksti = tunti.pvm ? muodostaPvmJaPaiva(tunti.pvm) : tunti.paiva;
+            const paivaJaAika = `${pvmTeksti} klo ${tunti.alku}–${tunti.loppu}`;
 
-            const viikkoIlmanTunteja = viestiAsetukset.viikkoIlmanTunteja || '- Ei liikuntatunteja';
-            const lopetus = viestiAsetukset.lopetus || 'Mahdollisista muutoksista tiedotetaan Wilmassa.';
+            rivit.push([
+                viikko,
+                paivaJaAika,
+                tunti.paikka || '',
+                '',
+                ''
+            ].join('\t'));
+        });
 
-            let teksti = `${otsikko}\n\n${aloitus}\n\n`;
+        viikko++;
+        if (viikko > 52) viikko = 1;
+    }
 
-            for (let i = 0; i < viikkomaarat; i++) {
-                const tunnit = haeRyhmanTunnitViikolle(opettaja, ryhma, viikko);
-
-                teksti += `Viikko ${viikko}\n`;
-
-                if (!tunnit.length) {
-                    teksti += `${viikkoIlmanTunteja}\n\n`;
-                } else {
-                    tunnit.forEach(tunti => {
-                        const pvmTeksti = tunti.pvm ? muodostaPvmJaPaiva(tunti.pvm) : tunti.paiva;
-                        teksti += `- ${pvmTeksti} klo ${tunti.alku}–${tunti.loppu} – ${tunti.paikka}\n`;
-                    });
-                    teksti += `\n`;
-                }
-
-                viikko++;
-                if (viikko > 52) viikko = 1;
-            }
-
-            teksti += lopetus;
-
-            document.getElementById('wilma-teksti').value = teksti;
-        }
+    document.getElementById('wilma-teksti').value = rivit.join('\n');
+}
 
         async function kopioiWilmaTeksti() {
             const text = document.getElementById('wilma-teksti').value;
