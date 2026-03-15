@@ -461,23 +461,6 @@
             margin: 0 auto;
         }
 
-        .wilma-output {
-            margin-top: 16px;
-            text-align: left;
-        }
-
-        .wilma-output textarea {
-            width: 100%;
-            min-height: 360px;
-            border: 1px solid #d1d5db;
-            border-radius: 12px;
-            padding: 12px;
-            font-size: 0.95rem;
-            line-height: 1.45;
-            resize: vertical;
-            font-family: inherit;
-        }
-
         .wilma-help {
             color: #6b7280;
             font-size: 0.9rem;
@@ -671,11 +654,6 @@
                 margin-top: 2px;
                 line-height: 1.1;
             }
-
-            .wilma-output textarea {
-                min-height: 260px;
-                font-size: 0.85rem;
-            }
         }
     </style>
 </head>
@@ -739,16 +717,10 @@
                     <input id="wilma-viikkomaarat" type="number" min="1" max="30" value="6">
 
                     <button id="muodosta-wilma">Muodosta viesti</button>
-                    <button id="kopioi-wilma" class="secondary-btn">Kopioi teksti</button>
-                </div>
-
-                <div class="wilma-output">
-                    <textarea id="wilma-teksti" placeholder="Valmis Wilma-viesti tulee tähän."></textarea>
                 </div>
 
                 <div class="wilma-help">
-                    Muodostaa valmiin opettaja- ja ryhmäkohtaisen viestin, jossa näkyvät päivä, kellonaika ja paikka.
-                    Erityishuomiot voit lisätä itse Wilmaan ennen lähettämistä.
+                    Muodostaa Word-tiedoston, jossa on Wilmaan sopiva taulukko. Kokoontuminen- ja Muuta huomioitavaa -sarakkeet jäävät tyhjiksi. Kokoontuminen-sarake on valmiiksi lihavoitu.
                 </div>
             </div>
         </div>
@@ -816,8 +788,10 @@
         </div>
     </div>
 
+    <script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
+
     <script>
-           /*
+        /*
         ============================================================
         YLLÄPITOASETUKSET – MUOKKAA VAIN TÄTÄ BLOKKIA TARVITTAESSA
         ============================================================
@@ -1424,7 +1398,7 @@
                             opettajanTila = tilat[indeksi] || "—";
                         }
 
-                        return { ...tunti, opettajanTila, lisaluokka };
+                        return { ...tunti, paikka: opettajanTila, opettajanTila, lisaluokka };
                     });
 
                     blokit.push({ kiertoTyyppi, onkoVapaa, kiertoTeksti, otsikkoAika, tunnit });
@@ -1809,82 +1783,169 @@
                 });
         }
 
-        function muodostaWilmaViesti() {
-    const opettaja = document.getElementById('wilma-ope').value;
-    const ryhma = document.getElementById('wilma-ryhma').value;
-    const alkuviikko = Number(document.getElementById('wilma-alkuviikko').value);
-    const viikkomaarat = Number(document.getElementById('wilma-viikkomaarat').value);
+        async function muodostaWilmaViesti() {
+            const opettaja = document.getElementById('wilma-ope').value;
+            const ryhma = document.getElementById('wilma-ryhma').value;
+            const alkuviikko = Number(document.getElementById('wilma-alkuviikko').value);
+            const viikkomaarat = Number(document.getElementById('wilma-viikkomaarat').value);
 
-    if (!opettaja) {
-        alert('Valitse opettaja.');
-        return;
-    }
-
-    if (!ryhma) {
-        alert('Valitse ryhmä.');
-        return;
-    }
-
-    if (isNaN(alkuviikko) || alkuviikko < 1 || alkuviikko > 52) {
-        alert('Anna alkuviikko väliltä 1–52.');
-        return;
-    }
-
-    if (isNaN(viikkomaarat) || viikkomaarat < 1 || viikkomaarat > 30) {
-        alert('Anna viikkomäärä väliltä 1–30.');
-        return;
-    }
-
-    let viikko = alkuviikko;
-    const rivit = [];
-
-    rivit.push([
-        'Vko',
-        'Päivä / aika',
-        'Liikuntatunnin aihe/paikka',
-        'Kokoontuminen',
-        'Muuta huomioitavaa'
-    ].join('\t'));
-
-    for (let i = 0; i < viikkomaarat; i++) {
-        const tunnit = haeRyhmanTunnitViikolle(opettaja, ryhma, viikko);
-
-        tunnit.forEach(tunti => {
-            const pvmTeksti = tunti.pvm ? muodostaPvmJaPaiva(tunti.pvm) : tunti.paiva;
-            const paivaJaAika = `${pvmTeksti} klo ${tunti.alku}–${tunti.loppu}`;
-
-            rivit.push([
-                viikko,
-                paivaJaAika,
-                tunti.paikka || '',
-                '',
-                ''
-            ].join('\t'));
-        });
-
-        viikko++;
-        if (viikko > 52) viikko = 1;
-    }
-
-    document.getElementById('wilma-teksti').value = rivit.join('\n');
-}
-
-        async function kopioiWilmaTeksti() {
-            const text = document.getElementById('wilma-teksti').value;
-            if (!text.trim()) {
-                alert('Muodosta ensin viesti.');
+            if (!opettaja) {
+                alert('Valitse opettaja.');
                 return;
             }
 
-            try {
-                await navigator.clipboard.writeText(text);
-                alert('Teksti kopioitu.');
-            } catch (err) {
-                const area = document.getElementById('wilma-teksti');
-                area.select();
-                area.setSelectionRange(0, 99999);
-                alert('Valmis teksti valittiin. Kopioi se itse.');
+            if (!ryhma) {
+                alert('Valitse ryhmä.');
+                return;
             }
+
+            if (isNaN(alkuviikko) || alkuviikko < 1 || alkuviikko > 52) {
+                alert('Anna alkuviikko väliltä 1–52.');
+                return;
+            }
+
+            if (isNaN(viikkomaarat) || viikkomaarat < 1 || viikkomaarat > 30) {
+                alert('Anna viikkomäärä väliltä 1–30.');
+                return;
+            }
+
+            const {
+                Document,
+                Packer,
+                Paragraph,
+                Table,
+                TableRow,
+                TableCell,
+                WidthType,
+                TextRun,
+                HeadingLevel,
+                BorderStyle
+            } = window.docx;
+
+            function teeOtsikkoSolu(teksti, widthPercent) {
+                return new TableCell({
+                    width: {
+                        size: widthPercent,
+                        type: WidthType.PERCENTAGE
+                    },
+                    children: [
+                        new Paragraph({
+                            children: [
+                                new TextRun({
+                                    text: teksti,
+                                    bold: true
+                                })
+                            ]
+                        })
+                    ]
+                });
+            }
+
+            function teeTekstiSolu(teksti, widthPercent, bold = false) {
+                return new TableCell({
+                    width: {
+                        size: widthPercent,
+                        type: WidthType.PERCENTAGE
+                    },
+                    children: [
+                        new Paragraph({
+                            children: [
+                                new TextRun({
+                                    text: teksti || '',
+                                    bold
+                                })
+                            ]
+                        })
+                    ]
+                });
+            }
+
+            let viikko = alkuviikko;
+            let loppuviikko = alkuviikko + viikkomaarat - 1;
+            while (loppuviikko > 52) loppuviikko -= 52;
+
+            const rows = [];
+
+            rows.push(
+                new TableRow({
+                    tableHeader: true,
+                    children: [
+                        teeOtsikkoSolu('Vko', 8),
+                        teeOtsikkoSolu('Päivä / aika', 24),
+                        teeOtsikkoSolu('Liikuntatunnin aihe/paikka', 24),
+                        teeOtsikkoSolu('Kokoontuminen', 22),
+                        teeOtsikkoSolu('Muuta huomioitavaa', 22)
+                    ]
+                })
+            );
+
+            for (let i = 0; i < viikkomaarat; i++) {
+                const tunnit = haeRyhmanTunnitViikolle(opettaja, ryhma, viikko);
+
+                tunnit.forEach(tunti => {
+                    const pvmTeksti = tunti.pvm ? muodostaPvmJaPaiva(tunti.pvm) : tunti.paiva;
+                    const paivaJaAika = `${pvmTeksti} klo ${tunti.alku}–${tunti.loppu}`;
+
+                    rows.push(
+                        new TableRow({
+                            children: [
+                                teeTekstiSolu(String(viikko), 8),
+                                teeTekstiSolu(paivaJaAika, 24),
+                                teeTekstiSolu(tunti.paikka || '', 24),
+                                teeTekstiSolu('', 22, true),
+                                teeTekstiSolu('', 22, false)
+                            ]
+                        })
+                    );
+                });
+
+                viikko++;
+                if (viikko > 52) viikko = 1;
+            }
+
+            const doc = new Document({
+                sections: [
+                    {
+                        children: [
+                            new Paragraph({
+                                text: `Liikuntatiedot ryhmälle ${ryhma}, opettaja ${opettaja}`,
+                                heading: HeadingLevel.HEADING_1
+                            }),
+                            new Paragraph({
+                                text: `Viikot ${alkuviikko}–${loppuviikko}`
+                            }),
+                            new Paragraph({ text: '' }),
+                            new Table({
+                                width: {
+                                    size: 100,
+                                    type: WidthType.PERCENTAGE
+                                },
+                                borders: {
+                                    top: { style: BorderStyle.SINGLE, size: 1, color: "999999" },
+                                    bottom: { style: BorderStyle.SINGLE, size: 1, color: "999999" },
+                                    left: { style: BorderStyle.SINGLE, size: 1, color: "999999" },
+                                    right: { style: BorderStyle.SINGLE, size: 1, color: "999999" },
+                                    insideHorizontal: { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" },
+                                    insideVertical: { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" }
+                                },
+                                rows
+                            })
+                        ]
+                    }
+                ]
+            });
+
+            const blob = await Packer.toBlob(doc);
+            const fileName = `wilma_${ryhma}_${opettaja}_vko_${alkuviikko}_${loppuviikko}.docx`;
+
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
         }
 
         function renderoiMassamuutosLista(tunnit) {
@@ -2126,8 +2187,13 @@
 
             document.getElementById('avaa-wilma').addEventListener('click', avaaWilmaNakyma);
             document.getElementById('takaisin-kalenteriin').addEventListener('click', suljeWilmaNakyma);
-            document.getElementById('muodosta-wilma').addEventListener('click', muodostaWilmaViesti);
-            document.getElementById('kopioi-wilma').addEventListener('click', kopioiWilmaTeksti);
+            document.getElementById('muodosta-wilma').addEventListener('click', async () => {
+                try {
+                    await muodostaWilmaViesti();
+                } catch (err) {
+                    alert(err.message);
+                }
+            });
 
             document.getElementById('wilma-ope').addEventListener('change', () => {
                 paivitaWilmaRyhmat();
