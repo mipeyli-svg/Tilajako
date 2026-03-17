@@ -1868,6 +1868,12 @@ function csvRiviOsiksi(rivi) {
             size: widthPercent,
             type: WidthType.PERCENTAGE
         },
+        margins: {
+            top: 80,
+            bottom: 80,
+            left: 120,
+            right: 80
+        },
         ...(fillColor ? {
             shading: {
                 fill: fillColor
@@ -1875,6 +1881,10 @@ function csvRiviOsiksi(rivi) {
         } : {}),
         children: [
             new Paragraph({
+                spacing: {
+                    before: 20,
+                    after: 20
+                },
                 children: [
                     new TextRun({
                         text: teksti || '',
@@ -1892,6 +1902,12 @@ function csvRiviOsiksi(rivi) {
             size: widthPercent,
             type: WidthType.PERCENTAGE
         },
+        margins: {
+            top: 80,
+            bottom: 80,
+            left: 120,
+            right: 80
+        },
         ...(fillColor ? {
             shading: {
                 fill: fillColor
@@ -1899,6 +1915,10 @@ function csvRiviOsiksi(rivi) {
         } : {}),
         children: rivit.map(rivi =>
             new Paragraph({
+                spacing: {
+                    before: 20,
+                    after: 20
+                },
                 children: [
                     new TextRun({
                         text: rivi.teksti || '',
