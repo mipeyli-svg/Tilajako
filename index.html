@@ -510,6 +510,68 @@
             margin-top: 12px;
         }
 
+        .kiertotestaaja-taulukko {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 14px;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .kiertotestaaja-taulukko th,
+        .kiertotestaaja-taulukko td {
+            border: 1px solid #e5e7eb;
+            padding: 10px;
+            text-align: left;
+            font-size: 0.92rem;
+        }
+
+        .kiertotestaaja-taulukko th {
+            background: #f3f4f6;
+            font-weight: 800;
+            color: #374151;
+        }
+
+        .kiertotestaaja-taulukko select {
+            width: 100%;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 8px 10px;
+            background: white;
+            color: #111827;
+            font-size: 0.92rem;
+        }
+
+        .kiertotulos-ok,
+        .kiertotulos-virhe {
+            padding: 12px 14px;
+            border-radius: 10px;
+            margin-top: 12px;
+            font-size: 0.95rem;
+        }
+
+        .kiertotulos-ok {
+            background: #ecfdf5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+
+        .kiertotulos-virhe {
+            background: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+
+        .kiertoristiriita-rivi {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 10px 12px;
+            margin-top: 8px;
+        }
+
         @media (min-width: 900px) {
             .yhteenveto-wrap {
                 grid-template-columns: 1fr 1fr 1fr;
@@ -666,6 +728,7 @@
             <div class="top-tools">
                 <button id="avaa-wilma" class="secondary-btn">Wilma-kooste</button>
                 <button id="avaa-massamuutos" class="secondary-btn">Muuta useita tunteja</button>
+                <button id="avaa-kiertotestaaja" class="secondary-btn">Kiertotestaaja</button>
             </div>
 
             <div class="viikko-ohjaus">
@@ -767,6 +830,35 @@
         </div>
     </div>
 
+    <div id="kiertotestaaja-screen" class="hidden">
+        <div class="wilma-wrap">
+            <div class="wilma-panel">
+                <h2>Kiertotestaaja</h2>
+
+                <div class="top-tools">
+                    <button id="takaisin-kiertotestaajasta" class="secondary-btn">← Takaisin kalenteriin</button>
+                </div>
+
+                <div class="wilma-controls">
+                    <label for="testi-alkuviikko">Alkuviikko:</label>
+                    <input id="testi-alkuviikko" type="number" min="1" max="53">
+
+                    <label for="testi-loppuviikko">Loppuviikko:</label>
+                    <input id="testi-loppuviikko" type="number" min="1" max="53">
+
+                    <button id="suorita-kiertotesti">Testaa ristiriidat</button>
+                </div>
+
+                <div id="kiertotestaaja-asetukset" class="massamuutos-lista-wrap"></div>
+                <div id="kiertotestaaja-tulokset" class="massamuutos-lista-wrap"></div>
+
+                <div class="wilma-help">
+                    Valitse opettajille aloituspaikat eri kierroissa ja tarkista, tuleeko samoihin aikoihin paikkaristiriitoja.
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="tila-modal-backdrop" class="tila-modal-backdrop hidden">
         <div class="tila-modal">
             <div class="tila-modal-otsikko">Muuta paikkaa</div>
@@ -791,26 +883,6 @@
     <script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
 
     <script>
-           /*
-        ============================================================
-        YLLÄPITOASETUKSET – MUOKKAA VAIN TÄTÄ BLOKKIA TARVITTAESSA
-        ============================================================
-
-        1) sheetUrl = julkaistu CSV-linkki
-        2) appsScriptUrl = Apps Script web app /exec -osoite
-        3) opettajat = nimet täsmälleen siinä muodossa kuin Sheetissä
-        4) aloitusViikko = se viikko, josta lukuvuoden kierto alkaa
-        5) lukuvuodenAloitusKuukausiPaiva = muodossa KK-PP, esim. 08-10
-        6) eiKierraViikot = lomaviikot, joilla kierto ei etene
-        7) lahtoTilat:
-            - 2: 2-kierron opettajakohtaiset aloituspaikat
-            - 3: 3-kierron opettajakohtaiset aloituspaikat
-            - 4: 4-kierron opettajakohtaiset aloituspaikat
-
-        Opettajien järjestys ratkaisee kaiken:
-        ensimmäinen nimi vastaa aina ensimmäistä paikkaa, toinen toista jne.
-        ============================================================
-        */
         const YLLAPITO_ASETUKSET = {
             sheetUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRNc9D23NHyoU0H5tLM86bd5w-7E318BH0RLa3SLcgy1xmkENyDY6yCliA64Iyagsff6SYAFAwlQKfp/pub?output=csv',
             appsScriptUrl: 'https://script.google.com/macros/s/AKfycbzV0h8icVctrXg9ykg83eaukyZZJauOEXiHBbapCV5PoUUtHwtpj-yuleowVtGnuoUO/exec',
@@ -1631,6 +1703,20 @@
             document.getElementById('calendar-screen').classList.remove('hidden');
         }
 
+        function avaaKiertotestaajaNakyma() {
+            document.getElementById('calendar-screen').classList.add('hidden');
+            document.getElementById('kiertotestaaja-screen').classList.remove('hidden');
+            document.getElementById('testi-alkuviikko').value = valittuViikko;
+            document.getElementById('testi-loppuviikko').value = valittuViikko;
+            renderoiKiertotestaajaAsetukset();
+            document.getElementById('kiertotestaaja-tulokset').innerHTML = '';
+        }
+
+        function suljeKiertotestaajaNakyma() {
+            document.getElementById('kiertotestaaja-screen').classList.add('hidden');
+            document.getElementById('calendar-screen').classList.remove('hidden');
+        }
+
         function haeRyhmanTunnitViikolle(opettaja, ryhma, viikkoNumero) {
             const viikonPaivamaarat = haeViikonPaivamaarat(viikkoNumero);
             return (parsedTapahtumatCache || [])
@@ -1925,6 +2011,181 @@
             }
         }
 
+        function renderoiKiertotestaajaAsetukset() {
+            const container = document.getElementById('kiertotestaaja-asetukset');
+            const tilat2 = tilatKierroksittain[2] || [];
+            const tilat3 = tilatKierroksittain[3] || [];
+            const tilat4 = tilatKierroksittain[4] || [];
+            let html = `
+                <table class="kiertotestaaja-taulukko">
+                    <thead>
+                        <tr>
+                            <th>Opettaja</th>
+                            <th>2-kierto</th>
+                            <th>3-kierto</th>
+                            <th>4-kierto</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            ASETUKSET.opettajat.forEach((ope, index) => {
+                const nykyinen2 = ASETUKSET.lahtoTilat?.[2]?.[index] || '';
+                const nykyinen3 = ASETUKSET.lahtoTilat?.[3]?.[index] || '';
+                const nykyinen4 = ASETUKSET.lahtoTilat?.[4]?.[index] || '';
+                html += `
+                    <tr>
+                        <td><strong>${ope}</strong></td>
+                        <td>${teeKiertotestaajaSelectHtml(ope, 2, tilat2, nykyinen2)}</td>
+                        <td>${teeKiertotestaajaSelectHtml(ope, 3, tilat3, nykyinen3)}</td>
+                        <td>${teeKiertotestaajaSelectHtml(ope, 4, tilat4, nykyinen4)}</td>
+                    </tr>
+                `;
+            });
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+        }
+
+        function teeKiertotestaajaSelectHtml(ope, kierto, tilat, selected) {
+            const options = tilat.map(tila => `<option value="${tila}" ${tila === selected ? 'selected' : ''}>${tila}</option>`).join('');
+            return `<select data-ope="${ope}" data-kierto="${kierto}">${options}</select>`;
+        }
+
+        function haeTestiLahtoTilat() {
+            const result = { 2: [], 3: [], 4: [] };
+            ASETUKSET.opettajat.forEach(ope => {
+                [2, 3, 4].forEach(kierto => {
+                    const select = document.querySelector(`#kiertotestaaja-asetukset select[data-ope="${ope}"][data-kierto="${kierto}"]`);
+                    result[kierto].push(select ? select.value : '');
+                });
+            });
+            return result;
+        }
+
+        function haeOpettajanViikonTilaTestiasetuksilla(opettaja, kierto, viikkoNumero, testiLahtoTilat) {
+            const tilat = tilatKierroksittain[kierto];
+            const opettajaIndeksi = haeOpettajaIndeksi(opettaja);
+            const lahtoTila = opettajaIndeksi >= 0 ? testiLahtoTilat?.[kierto]?.[opettajaIndeksi] : null;
+            if (!tilat || !lahtoTila) return null;
+            const lahtoIndeksi = tilat.indexOf(lahtoTila);
+            if (lahtoIndeksi === -1) return null;
+            const siirtyma = viikkoSiirtyma(viikkoNumero, kierto);
+            return tilat[(lahtoIndeksi + siirtyma) % tilat.length];
+        }
+
+        function haeTunninPaikkaTestiasetuksilla(tunti, viikkoNumero, testiLahtoTilat) {
+            const kiertoTyyppi = tunti.kierto;
+            const onkoVapaa = !kiertoTyyppi || isNaN(kiertoTyyppi) || kiertoTyyppi === 0;
+            const manuaalinenTila = haeManuaalinenTila(viikkoNumero, tunti);
+            if (manuaalinenTila) return manuaalinenTila;
+            if (tunti.poikkeus) return tunti.poikkeus;
+            if (onkoVapaa) return 'Sopivat keskenään';
+            if (kiertoTyyppi === 2 || kiertoTyyppi === 3 || kiertoTyyppi === 4) {
+                return haeOpettajanViikonTilaTestiasetuksilla(tunti.ope, kiertoTyyppi, viikkoNumero, testiLahtoTilat) || '—';
+            }
+            const tilat = tilatKierroksittain[kiertoTyyppi] || ['—'];
+            const indeksi = Math.max(0, haeOpettajaIndeksi(tunti.ope)) % tilat.length;
+            return tilat[indeksi] || '—';
+        }
+
+        function osuvatkoPaallekkain(t1, t2) {
+            return aikaMinuuteiksi(t1.alku) < aikaMinuuteiksi(t2.loppu) &&
+                   aikaMinuuteiksi(t2.alku) < aikaMinuuteiksi(t1.loppu);
+        }
+
+        function haeSeuraavaViikkoNumerona(viikko, lukuvuosi) {
+            const kalenterivuosi = haeKalenterivuosiViikolle(viikko, lukuvuosi);
+            const maxWeeks = vuodenViikkojenMaara(kalenterivuosi);
+            return viikko >= maxWeeks ? 1 : viikko + 1;
+        }
+
+        function muodostaTestiViikot(alkuviikko, loppuviikko) {
+            const viikot = [];
+            let v = alkuviikko;
+            let safety = 0;
+            while (true) {
+                viikot.push(v);
+                if (v === loppuviikko) break;
+                v = haeSeuraavaViikkoNumerona(v, valittuLukuvuodenAloitusVuosi);
+                safety++;
+                if (safety > 60) break;
+            }
+            return viikot;
+        }
+
+        function suoritaKiertotesti() {
+            const alkuviikko = Number(document.getElementById('testi-alkuviikko').value);
+            const loppuviikko = Number(document.getElementById('testi-loppuviikko').value);
+            if (isNaN(alkuviikko) || alkuviikko < 1 || alkuviikko > 53) {
+                alert('Anna alkuviikko väliltä 1–53.');
+                return;
+            }
+            if (isNaN(loppuviikko) || loppuviikko < 1 || loppuviikko > 53) {
+                alert('Anna loppuviikko väliltä 1–53.');
+                return;
+            }
+            const testiLahtoTilat = haeTestiLahtoTilat();
+            const testiviikot = muodostaTestiViikot(alkuviikko, loppuviikko);
+            const ristiriidat = [];
+            testiviikot.forEach(viikkoNumero => {
+                viikonpaivat.forEach(paiva => {
+                    const paivanTunnit = (parsedTapahtumatCache || []).filter(t => t.paiva === paiva);
+                    for (let i = 0; i < paivanTunnit.length; i++) {
+                        for (let j = i + 1; j < paivanTunnit.length; j++) {
+                            const t1 = paivanTunnit[i];
+                            const t2 = paivanTunnit[j];
+                            if (!osuvatkoPaallekkain(t1, t2)) continue;
+                            const paikka1 = haeTunninPaikkaTestiasetuksilla(t1, viikkoNumero, testiLahtoTilat);
+                            const paikka2 = haeTunninPaikkaTestiasetuksilla(t2, viikkoNumero, testiLahtoTilat);
+                            if (!paikka1 || !paikka2) continue;
+                            if (paikka1 === 'Sopivat keskenään' || paikka2 === 'Sopivat keskenään') continue;
+                            if (paikka1 !== paikka2) continue;
+                            const viikonPaivamaarat = haeViikonPaivamaarat(viikkoNumero);
+                            const pvmTeksti = viikonPaivamaarat[paiva]?.date ? muodostaPvmJaPaiva(viikonPaivamaarat[paiva].date) : paiva;
+                            ristiriidat.push({
+                                viikko: viikkoNumero,
+                                paiva,
+                                pvmTeksti,
+                                paikka: paikka1,
+                                alku: t1.alku,
+                                loppu: t1.loppu,
+                                ope1: t1.ope,
+                                ryhma1: t1.ryhma,
+                                alku2: t2.alku,
+                                loppu2: t2.loppu,
+                                ope2: t2.ope,
+                                ryhma2: t2.ryhma
+                            });
+                        }
+                    }
+                });
+            });
+            renderoiKiertotestaajaTulokset(ristiriidat, testiviikot.length);
+        }
+
+        function renderoiKiertotestaajaTulokset(ristiriidat, viikkoja) {
+            const container = document.getElementById('kiertotestaaja-tulokset');
+            container.innerHTML = '';
+            if (!ristiriidat.length) {
+                container.innerHTML = `<div class="kiertotulos-ok">Ei ristiriitoja valitulla välillä (${viikkoja} viikkoa).</div>`;
+                return;
+            }
+            const summary = document.createElement('div');
+            summary.className = 'kiertotulos-virhe';
+            summary.textContent = `Ristiriitoja löytyi ${ristiriidat.length}.`;
+            container.appendChild(summary);
+            ristiriidat.forEach(r => {
+                const div = document.createElement('div');
+                div.className = 'kiertoristiriita-rivi';
+                div.innerHTML = `
+                    <strong>Vko ${r.viikko}</strong> – ${r.pvmTeksti}<br>
+                    <strong>Paikka:</strong> ${r.paikka}<br>
+                    <strong>${r.ope1}</strong> (${r.ryhma1}) ${r.alku}–${r.loppu}<br>
+                    <strong>${r.ope2}</strong> (${r.ryhma2}) ${r.alku2}–${r.loppu2}
+                `;
+                container.appendChild(div);
+            });
+        }
+
         let resizeTimer = null;
         function debounceRender() {
             clearTimeout(resizeTimer);
@@ -1934,20 +2195,24 @@
         window.onload = () => {
             asetaNykyinenViikkoJaLukuvuosi();
             paivitaOpeSuodatin();
+
             document.getElementById('edellinen-viikko').addEventListener('click', () => { edellinenViikko(); suorita(valittuViikko, { skipOverridesFetch: true }); });
             document.getElementById('seuraava-viikko').addEventListener('click', () => { seuraavaViikko(); suorita(valittuViikko, { skipOverridesFetch: true }); });
             document.getElementById('nykyinen-viikko').addEventListener('click', () => { asetaNykyinenViikkoJaLukuvuosi(); suorita(valittuViikko, { skipOverridesFetch: true }); });
             document.getElementById('siirry-viikolle').addEventListener('click', siirryViikolle);
             document.getElementById('viikko-input').addEventListener('keydown', e => { if (e.key === 'Enter') siirryViikolle(); });
             document.getElementById('ope-suodatin').addEventListener('change', e => { valittuOpettaja = e.target.value; suorita(valittuViikko, { skipOverridesFetch: true }); });
+
             document.getElementById('modal-tallenna').addEventListener('click', async () => { try { await tallennaTilaMuutos(); } catch (err) { alert(err.message); } });
             document.getElementById('modal-palauta').addEventListener('click', async () => { try { await palautaAutomaattiseksi(); } catch (err) { alert(err.message); } });
             document.getElementById('modal-peruuta').addEventListener('click', suljeTilaModal);
             document.getElementById('tila-modal-backdrop').addEventListener('click', e => { if (e.target.id === 'tila-modal-backdrop') suljeTilaModal(); });
+
             document.getElementById('avaa-wilma').addEventListener('click', avaaWilmaNakyma);
             document.getElementById('takaisin-kalenteriin').addEventListener('click', suljeWilmaNakyma);
             document.getElementById('muodosta-wilma').addEventListener('click', async () => { try { await muodostaWilmaViesti(); } catch (err) { alert(err.message); } });
             document.getElementById('wilma-ope').addEventListener('change', () => { paivitaWilmaRyhmat(); });
+
             document.getElementById('avaa-massamuutos').addEventListener('click', avaaMassamuutosNakyma);
             document.getElementById('takaisin-massamuutoksesta').addEventListener('click', suljeMassamuutosNakyma);
             document.getElementById('hae-massamuutos-tunnit').addEventListener('click', haeMassamuutosTunnitJaRenderoi);
@@ -1955,7 +2220,13 @@
             document.getElementById('massamuutos-poista-kaikki').addEventListener('click', poistaKaikkiValinnatMassamuutoksessa);
             document.getElementById('massamuutos-valitse-muualla').addEventListener('click', valitseVainMuuallaMassamuutoksessa);
             document.getElementById('tallenna-massamuutos').addEventListener('click', async () => { try { await tallennaMassamuutos(); } catch (err) { alert(err.message); } });
+
+            document.getElementById('avaa-kiertotestaaja').addEventListener('click', avaaKiertotestaajaNakyma);
+            document.getElementById('takaisin-kiertotestaajasta').addEventListener('click', suljeKiertotestaajaNakyma);
+            document.getElementById('suorita-kiertotesti').addEventListener('click', suoritaKiertotesti);
+
             window.addEventListener('orientationchange', debounceRender);
+
             (async () => {
                 await haeTilamuutokset();
                 if (!csvCache) {
