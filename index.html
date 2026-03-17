@@ -913,6 +913,15 @@ function onkoYksoistunti(tunti) {
     const kesto = loppu - alku;
 
     return kesto > 0 && kesto <= 60;
+    function haeVakioKokoontuminen(paikka) {
+    const p = String(paikka || '').trim().toLowerCase();
+
+    if (p === 'yläsali' || p === 'alasali') {
+        return 'Koululla';
+    }
+
+    return '';
+}
 }
 
         function csvRiviOsiksi(rivi) {
@@ -1925,20 +1934,22 @@ function onkoYksoistunti(tunti) {
                 });
             }
 
-            rows.push(
-                new TableRow({
-                    children: [
-                        teeTekstiSolu(String(viikko), 8),
-                        teeMoniriviSolu([
-                            { teksti: pvmTeksti },
-                            { teksti: aikaTeksti }
-                        ], 22),
-                        teeMoniriviSolu(aihePaikkaRivit, 26),
-                        teeTekstiSolu('', 22, true),
-                        teeTekstiSolu('', 22, false)
-                    ]
-                })
-            );
+            const vakioKokoontuminen = haeVakioKokoontuminen(tunti.paikka);
+
+rows.push(
+    new TableRow({
+        children: [
+            teeTekstiSolu(String(viikko), 8),
+            teeMoniriviSolu([
+                { teksti: pvmTeksti },
+                { teksti: aikaTeksti }
+            ], 22),
+            teeMoniriviSolu(aihePaikkaRivit, 26),
+            teeTekstiSolu(vakioKokoontuminen, 22, true),
+            teeTekstiSolu('', 22, false)
+        ]
+    })
+);
         });
 
         viikko++;
