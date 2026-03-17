@@ -898,21 +898,22 @@
             return String(aika).trim().replace('.', ':');
         }
 
-        function aikaMinuuteiksi(aika) {
-            function onkoYksoistunti(tunti) {
+function aikaMinuuteiksi(aika) {
+    if (!aika) return 0;
+    const siistitty = String(aika).trim().replace('.', ':');
+    if (!siistitty.includes(':')) return 0;
+    const [h, m] = siistitty.split(':').map(Number);
+    if (isNaN(h) || isNaN(m)) return 0;
+    return h * 60 + m;
+}
+
+function onkoYksoistunti(tunti) {
     const alku = aikaMinuuteiksi(tunti.alku);
     const loppu = aikaMinuuteiksi(tunti.loppu);
     const kesto = loppu - alku;
 
     return kesto > 0 && kesto <= 60;
 }
-            if (!aika) return 0;
-            const siistitty = String(aika).trim().replace('.', ':');
-            if (!siistitty.includes(':')) return 0;
-            const [h, m] = siistitty.split(':').map(Number);
-            if (isNaN(h) || isNaN(m)) return 0;
-            return h * 60 + m;
-        }
 
         function csvRiviOsiksi(rivi) {
             const tulos = [];
@@ -1790,7 +1791,7 @@
                 });
         }
 
-       async function muodostaWilmaViesti() {
+      async function muodostaWilmaViesti() {
     const opettaja = document.getElementById('wilma-ope').value;
     const ryhma = document.getElementById('wilma-ryhma').value;
     const alkuviikko = Number(document.getElementById('wilma-alkuviikko').value);
@@ -1867,7 +1868,7 @@
         });
     }
 
-    function teeMoniriviSolu(rivit, widthPercent, bold = false) {
+    function teeMoniriviSolu(rivit, widthPercent) {
         return new TableCell({
             width: {
                 size: widthPercent,
@@ -1877,8 +1878,9 @@
                 new Paragraph({
                     children: [
                         new TextRun({
-                            text: rivi || '',
-                            bold
+                            text: rivi.teksti || '',
+                            bold: !!rivi.bold,
+                            italics: !!rivi.italics
                         })
                     ]
                 })
@@ -1912,16 +1914,25 @@
             const pvmTeksti = tunti.pvm ? muodostaPvmJaPaiva(tunti.pvm) : tunti.paiva;
             const aikaTeksti = `klo ${tunti.alku}–${tunti.loppu}`;
 
-            const aihePaikkaRivit = [tunti.paikka || ''];
+            const aihePaikkaRivit = [
+                { teksti: tunti.paikka || '' }
+            ];
+
             if (onkoYksoistunti(tunti)) {
-                aihePaikkaRivit.push('Yksöistunti');
+                aihePaikkaRivit.push({
+                    teksti: 'Yksöistunti',
+                    italics: true
+                });
             }
 
             rows.push(
                 new TableRow({
                     children: [
                         teeTekstiSolu(String(viikko), 8),
-                        teeMoniriviSolu([pvmTeksti, aikaTeksti], 22),
+                        teeMoniriviSolu([
+                            { teksti: pvmTeksti },
+                            { teksti: aikaTeksti }
+                        ], 22),
                         teeMoniriviSolu(aihePaikkaRivit, 26),
                         teeTekstiSolu('', 22, true),
                         teeTekstiSolu('', 22, false)
