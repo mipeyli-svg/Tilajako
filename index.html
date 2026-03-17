@@ -962,11 +962,11 @@
             return new Date(year, month - 1, day);
         }
 
-        LyhytPvm(date) {
+                function muodostaLyhytPvm(date) {
             return `${date.getDate()}.${date.getMonth() + 1}.`;
         }
 
-        PvmJaPaiva(date) {
+        function muodostaPvmJaPaiva(date) {
             const viikonpaivatLyhyet = ['su', 'ma', 'ti', 'ke', 'to', 'pe', 'la'];
             return `${viikonpaivatLyhyet[date.getDay()]} ${date.getDate()}.${date.getMonth() + 1}.`;
         }
@@ -2144,7 +2144,7 @@
     document.getElementById('testi-loppuviikko').value = valittuViikko;
     document.getElementById('kiertotestaaja-tulos').innerHTML = '<div class="testaaja-pieni">Valitse kierto ja viikkoväli, sitten paina "Laske paras jako".</div>';
 }
-        }
+        
 
         function suljeKiertotestaajaNakyma() {
             document.getElementById('kiertotestaaja-screen').classList.add('hidden');
@@ -2434,23 +2434,6 @@ function laskeParasKiertoJako() {
         loppuviikko
     );
 }
-            tulosEl.innerHTML = '<div class="testaaja-pieni">Lasketaan paras jako...</div>';
-
-            const ehdotukset = generoiKiertoEhdotukset(kierto, opettajat);
-
-            let paras = null;
-            let parasArvio = null;
-
-            ehdotukset.forEach(ehdotus => {
-                const arvio = arvioiKiertoEhdotus(kierto, ehdotus);
-                if (!parasArvio || arvio.pisteet < parasArvio.pisteet) {
-                    paras = ehdotus;
-                    parasArvio = arvio;
-                }
-            });
-
-            naytaKiertotestaajanTulos(kierto, opettajat, parasArvio, paras, ehdotukset.length);
-        }
 
         let resizeTimer = null;
         function debounceRender() {
