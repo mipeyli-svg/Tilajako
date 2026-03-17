@@ -2314,6 +2314,52 @@ function laskeParasKiertoJako() {
         return;
     }
 
+    function naytaKiertotestaajanTulos(kierto, opettajat, arvioitu, ehdotus, testattujaVaihtoehtoja, alkuviikko, loppuviikko) {
+    const el = document.getElementById('kiertotestaaja-tulos');
+
+    const ehdotusRivit = opettajat
+        .map(ope => `<div class="testaaja-rivi"><strong>${ope}</strong>: ${ehdotus[ope] || '—'}</div>`)
+        .join('');
+
+    const ristiriitaHtml = arvioitu.ristiriidat.length
+        ? arvioitu.ristiriidat.map(r => `
+            <div class="kiertoristiriita-rivi">
+                <strong>Vko ${r.viikko}</strong> – ${r.pvmTeksti}<br>
+                <strong>Paikka:</strong> ${r.paikka}<br>
+                <strong>${r.ope1}</strong> (${r.ryhma1}) ${r.alku1}–${r.loppu1}<br>
+                <strong>${r.ope2}</strong> (${r.ryhma2}) ${r.alku2}–${r.loppu2}
+            </div>
+        `).join('')
+        : '<div class="testaaja-rivi">Ei käsin rakennettavia salikonflikteja.</div>';
+
+    const tulosLuokka = arvioitu.konfliktit === 0 ? 'kiertotulos-ok' : 'kiertotulos-virhe';
+    const tulosTeksti = arvioitu.konfliktit === 0
+        ? `Täydellinen jako löytyi viikoille ${alkuviikko}–${loppuviikko}.`
+        : `Paras löydetty jako viikoille ${alkuviikko}–${loppuviikko} sisältää vielä käsin ratkaistavia kohtia.`;
+
+    el.innerHTML = `
+        <div class="${tulosLuokka}">${tulosTeksti}</div>
+
+        <div class="testaaja-kortti">
+            <div class="testaaja-otsikko">Paras ehdotus (${kierto}-kierto)</div>
+            ${ehdotusRivit}
+        </div>
+
+        <div class="testaaja-kortti">
+            <div class="testaaja-rivi"><strong>Testattuja vaihtoehtoja:</strong> ${testattujaVaihtoehtoja}</div>
+            <div class="testaaja-rivi"><strong>Salikonflikteja:</strong> ${arvioitu.konfliktit}</div>
+            <div class="testaaja-rivi"><strong>Käsin rakennettavia kohtia:</strong> ${arvioitu.kasinRakennettavat}</div>
+            <div class="testaaja-rivi testaaja-pieni">
+                Optimointi kävi läpi oikeat viikot välillä ${alkuviikko}–${loppuviikko}. Vain Yläsali- ja Alasali-ristiriidat lasketaan.
+            </div>
+        </div>
+
+        <div class="testaaja-kortti">
+            <div class="testaaja-otsikko">Käsin ratkaistavat kohdat</div>
+            ${ristiriitaHtml}
+        </div>
+    `;
+}
     const opettajat = muodostaKiertoTestinOpettajaLista(kierto);
 
     if (!opettajat.length) {
