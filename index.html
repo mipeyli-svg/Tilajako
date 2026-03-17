@@ -1846,6 +1846,9 @@ function csvRiviOsiksi(rivi) {
                 size: widthPercent,
                 type: WidthType.PERCENTAGE
             },
+            shading: {
+            fill: 'DCE6F1'
+            },    
             children: [
                 new Paragraph({
                     children: [
@@ -1859,44 +1862,54 @@ function csvRiviOsiksi(rivi) {
         });
     }
 
-    function teeTekstiSolu(teksti, widthPercent, bold = false) {
-        return new TableCell({
-            width: {
-                size: widthPercent,
-                type: WidthType.PERCENTAGE
-            },
-            children: [
-                new Paragraph({
-                    children: [
-                        new TextRun({
-                            text: teksti || '',
-                            bold
-                        })
-                    ]
-                })
-            ]
-        });
-    }
+    function teeTekstiSolu(teksti, widthPercent, bold = false, fillColor = null) {
+    return new TableCell({
+        width: {
+            size: widthPercent,
+            type: WidthType.PERCENTAGE
+        },
+        ...(fillColor ? {
+            shading: {
+                fill: fillColor
+            }
+        } : {}),
+        children: [
+            new Paragraph({
+                children: [
+                    new TextRun({
+                        text: teksti || '',
+                        bold
+                    })
+                ]
+            })
+        ]
+    });
+}
 
-    function teeMoniriviSolu(rivit, widthPercent) {
-        return new TableCell({
-            width: {
-                size: widthPercent,
-                type: WidthType.PERCENTAGE
-            },
-            children: rivit.map(rivi =>
-                new Paragraph({
-                    children: [
-                        new TextRun({
-                            text: rivi.teksti || '',
-                            bold: !!rivi.bold,
-                            italics: !!rivi.italics
-                        })
-                    ]
-                })
-            )
-        });
-    }
+    function teeMoniriviSolu(rivit, widthPercent, fillColor = null) {
+    return new TableCell({
+        width: {
+            size: widthPercent,
+            type: WidthType.PERCENTAGE
+        },
+        ...(fillColor ? {
+            shading: {
+                fill: fillColor
+            }
+        } : {}),
+        children: rivit.map(rivi =>
+            new Paragraph({
+                children: [
+                    new TextRun({
+                        text: rivi.teksti || '',
+                        bold: !!rivi.bold,
+                        italics: !!rivi.italics
+                    })
+                ]
+            })
+        )
+    });
+}
 
     let viikko = alkuviikko;
     let loppuviikko = alkuviikko + viikkomaarat - 1;
@@ -1936,18 +1949,20 @@ function csvRiviOsiksi(rivi) {
             }
 
             const vakioKokoontuminen = haeVakioKokoontuminen(tunti.paikka);
+const onYksoinen = onkoYksoistunti(tunti);
+const rivinVari = onYksoinen ? 'EAF7EE' : 'EAF2FF';
 
 rows.push(
     new TableRow({
         children: [
-            teeTekstiSolu(String(viikko), 8),
+            teeTekstiSolu(String(viikko), 8, false, rivinVari),
             teeMoniriviSolu([
                 { teksti: pvmTeksti },
                 { teksti: aikaTeksti }
-            ], 22),
-            teeMoniriviSolu(aihePaikkaRivit, 26),
-            teeTekstiSolu(vakioKokoontuminen, 22, true),
-            teeTekstiSolu('', 22, false)
+            ], 22, rivinVari),
+            teeMoniriviSolu(aihePaikkaRivit, 26, rivinVari),
+            teeTekstiSolu(vakioKokoontuminen, 22, true, rivinVari),
+            teeTekstiSolu('', 22, false, rivinVari)
         ]
     })
 );
