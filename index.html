@@ -500,14 +500,45 @@
             color: #374151;
         }
 
-        .massamuutos-tyhja {
+        \1
+
+        .testaaja-tulos {
+            margin-top: 16px;
+            text-align: left;
             background: white;
-            padding: 14px;
             border-radius: 12px;
-            color: #6b7280;
-            text-align: center;
+            padding: 16px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            margin-top: 12px;
+        }
+
+        .testaaja-otsikko {
+            font-weight: 800;
+            color: #111827;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+
+        .testaaja-kortti {
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 10px;
+            background: #fafafa;
+        }
+
+        .testaaja-rivi {
+            margin-bottom: 6px;
+            line-height: 1.4;
+        }
+
+        .testaaja-pieni {
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+
+        .testaaja-virhe {
+            color: #991b1b;
+            font-weight: 700;
         }
 
         .kiertotestaaja-taulukko {
@@ -727,7 +758,8 @@
 
             <div class="top-tools">
                 <button id="avaa-wilma" class="secondary-btn">Wilma-kooste</button>
-                <button id="avaa-massamuutos" class="secondary-btn">Muuta useita tunteja</button>
+                \1
+                <button id="avaa-kiertotestaaja" class="secondary-btn">Kiertotestaaja</button>
                 <button id="avaa-kiertotestaaja" class="secondary-btn">Kiertotestaaja</button>
             </div>
 
@@ -789,46 +821,7 @@
         </div>
     </div>
 
-    <div id="massamuutos-screen" class="hidden">
-        <div class="wilma-wrap">
-            <div class="wilma-panel">
-                <h2>Usean tunnin paikkamuutos</h2>
-
-                <div class="top-tools">
-                    <button id="takaisin-massamuutoksesta" class="secondary-btn">← Takaisin kalenteriin</button>
-                </div>
-
-                <div class="wilma-controls">
-                    <label for="massamuutos-ope">Opettaja:</label>
-                    <select id="massamuutos-ope"></select>
-
-                    <label for="massamuutos-viikko">Viikko:</label>
-                    <input id="massamuutos-viikko" type="number" min="1" max="53">
-
-                    <button id="hae-massamuutos-tunnit">Hae viikon tunnit</button>
-                </div>
-
-                <div class="top-tools">
-                    <button id="massamuutos-valitse-kaikki" class="secondary-btn">Valitse kaikki</button>
-                    <button id="massamuutos-poista-kaikki" class="secondary-btn">Poista valinnat</button>
-                    <button id="massamuutos-valitse-muualla" class="secondary-btn">Valitse vain Muualla-tunnit</button>
-                </div>
-
-                <div id="massamuutos-lista" class="wilma-output"></div>
-
-                <div class="wilma-controls">
-                    <label for="massamuutos-uusi-paikka">Uusi paikka:</label>
-                    <input id="massamuutos-uusi-paikka" type="text" placeholder="Esim. Uimahalli">
-
-                    <button id="tallenna-massamuutos">Tallenna valitut</button>
-                </div>
-
-                <div class="wilma-help">
-                    Valitse viikon tunnit, kirjoita uusi paikka ja tallenna kaikki valitut yhdellä kertaa.
-                </div>
-            </div>
-        </div>
-    </div>
+    \1
 
     <div id="kiertotestaaja-screen" class="hidden">
         <div class="wilma-wrap">
@@ -840,21 +833,21 @@
                 </div>
 
                 <div class="wilma-controls">
-                    <label for="testi-alkuviikko">Alkuviikko:</label>
-                    <input id="testi-alkuviikko" type="number" min="1" max="53">
+                    <label for="testaaja-kierto">Kierto:</label>
+                    <select id="testaaja-kierto">
+                        <option value="2">2-kierto</option>
+                        <option value="3">3-kierto</option>
+                        <option value="4">4-kierto</option>
+                    </select>
 
-                    <label for="testi-loppuviikko">Loppuviikko:</label>
-                    <input id="testi-loppuviikko" type="number" min="1" max="53">
-
-                    <button id="suorita-kiertotesti">Testaa ristiriidat</button>
+                    <button id="laske-paras-jako">Laske paras jako</button>
                 </div>
-
-                <div id="kiertotestaaja-asetukset" class="massamuutos-lista-wrap"></div>
-                <div id="kiertotestaaja-tulokset" class="massamuutos-lista-wrap"></div>
 
                 <div class="wilma-help">
-                    Valitse opettajille aloituspaikat eri kierroissa ja tarkista, tuleeko samoihin aikoihin paikkaristiriitoja.
+                    Testaa opettajien vakioaloituspaikkoja valitussa kierrossa. Ristiriidoiksi lasketaan vain Yläsali- ja Alasali-päällekkäisyydet. Muualla sallitaan.
                 </div>
+
+                <div id="kiertotestaaja-tulos" class="testaaja-tulos"></div>
             </div>
         </div>
     </div>
@@ -1698,9 +1691,144 @@
             renderoiMassamuutosLista([]);
         }
 
-        function suljeMassamuutosNakyma() {
-            document.getElementById('massamuutos-screen').classList.add('hidden');
+        \1
+
+        function avaaKiertotestaajaNakyma() {
+            document.getElementById('calendar-screen').classList.add('hidden');
+            document.getElementById('kiertotestaaja-screen').classList.remove('hidden');
+            document.getElementById('kiertotestaaja-tulos').innerHTML = '<div class="testaaja-pieni">Valitse kierto ja laske paras jako.</div>';
+        }
+
+        function suljeKiertotestaajaNakyma() {
+            document.getElementById('kiertotestaaja-screen').classList.add('hidden');
             document.getElementById('calendar-screen').classList.remove('hidden');
+        }
+
+        function muodostaKiertoTestinOpettajaLista(kierto) {
+            const mukana = new Set(
+                (parsedTapahtumatCache || [])
+                    .filter(t => Number(t.kierto) === Number(kierto))
+                    .map(t => t.ope)
+                    .filter(Boolean)
+            );
+            return ASETUKSET.opettajat.filter(ope => mukana.has(ope));
+        }
+
+        function haeKiertoBlokit(kierto) {
+            const blokit = [];
+            viikonpaivat.forEach(paiva => {
+                const paivanBlokit = groupedBaseCache?.[paiva]?.blokit || [];
+                paivanBlokit.forEach(blokki => {
+                    const tunnit = (blokki.tunnit || []).filter(t => Number(t.kierto) === Number(kierto));
+                    if (tunnit.length >= 2) {
+                        blokit.push({ paiva, alku: tunnit[0].alku, loppu: tunnit[0].loppu, tunnit });
+                    }
+                });
+            });
+            return blokit;
+        }
+
+        function ratkaiseTilaEhdotuksesta(kierto, ehdotus, ope, shift) {
+            const tilat = tilatKierroksittain[kierto] || [];
+            const lahto = ehdotus[ope];
+            if (!lahto || !tilat.length) return '—';
+            const lahtoIndeksi = tilat.indexOf(lahto);
+            if (lahtoIndeksi === -1) return '—';
+            return tilat[(lahtoIndeksi + shift) % tilat.length];
+        }
+
+        function arvioiKiertoEhdotus(kierto, ehdotus) {
+            const blokit = haeKiertoBlokit(kierto);
+            const shifts = Array.from({ length: Number(kierto) }, (_, i) => i);
+            const merkityksellisetTilat = ['Yläsali', 'Alasali'];
+            let konfliktit = 0;
+            const kasinRatkaistavat = [];
+
+            shifts.forEach(shift => {
+                blokit.forEach(blokki => {
+                    const tilaMap = new Map();
+                    blokki.tunnit.forEach(tunti => {
+                        const tila = ratkaiseTilaEhdotuksesta(kierto, ehdotus, tunti.ope, shift);
+                        if (!merkityksellisetTilat.includes(tila)) return;
+                        if (!tilaMap.has(tila)) tilaMap.set(tila, []);
+                        tilaMap.get(tila).push(tunti.ope);
+                    });
+
+                    tilaMap.forEach((opettajat, tila) => {
+                        if (opettajat.length > 1) {
+                            konfliktit += opettajat.length - 1;
+                            kasinRatkaistavat.push({ shift, paiva: blokki.paiva, alku: blokki.alku, loppu: blokki.loppu, tila, opettajat: [...opettajat] });
+                        }
+                    });
+                });
+            });
+
+            return { konfliktit, kasinRatkaistavat, pisteet: konfliktit * 100 + kasinRatkaistavat.length };
+        }
+
+        function generoiKiertoEhdotukset(kierto, opettajat) {
+            const tilat = tilatKierroksittain[kierto] || [];
+            const tulokset = [];
+            function rek(indeksi, nykyinen) {
+                if (indeksi >= opettajat.length) {
+                    tulokset.push({ ...nykyinen });
+                    return;
+                }
+                const ope = opettajat[indeksi];
+                tilat.forEach(tila => {
+                    nykyinen[ope] = tila;
+                    rek(indeksi + 1, nykyinen);
+                });
+            }
+            rek(0, {});
+            return tulokset;
+        }
+
+        function naytaKiertotestaajanTulos(kierto, opettajat, arvioitu, ehdotus) {
+            const el = document.getElementById('kiertotestaaja-tulos');
+            const ehdotusRivit = opettajat.map(ope => `<div class="testaaja-rivi"><strong>${ope}</strong>: ${ehdotus[ope] || '—'}</div>`).join('');
+            const kasin = arvioitu.kasinRatkaistavat.length
+                ? arvioitu.kasinRatkaistavat.map(r => `<div class="testaaja-rivi">Shift ${r.shift}: ${r.paiva} ${r.alku}–${r.loppu} – <strong>${r.tila}</strong> – ${r.opettajat.join(', ')}</div>`).join('')
+                : '<div class="testaaja-rivi">Ei käsin ratkaistavia salikonflikteja.</div>';
+
+            el.innerHTML = `
+                <div class="testaaja-otsikko">Paras ehdotus (${kierto}-kierto)</div>
+                <div class="testaaja-kortti">${ehdotusRivit}</div>
+                <div class="testaaja-kortti">
+                    <div class="testaaja-rivi"><strong>Yhteensä salikonflikteja:</strong> ${arvioitu.konfliktit}</div>
+                    <div class="testaaja-rivi"><strong>Käsin rakennettavia kohtia:</strong> ${arvioitu.kasinRatkaistavat.length}</div>
+                    <div class="testaaja-rivi testaaja-pieni">Huom: vain Yläsali ja Alasali lasketaan ristiriidoiksi. Muualla sallitaan.</div>
+                </div>
+                <div class="testaaja-kortti">
+                    <div class="testaaja-otsikko">Käsin ratkaistavat kohdat</div>
+                    ${kasin}
+                </div>
+            `;
+        }
+
+        function laskeParasKiertoJako() {
+            const kierto = Number(document.getElementById('testaaja-kierto').value);
+            const opettajat = muodostaKiertoTestinOpettajaLista(kierto);
+            const tulosEl = document.getElementById('kiertotestaaja-tulos');
+
+            if (!opettajat.length) {
+                tulosEl.innerHTML = '<div class="testaaja-virhe">Valitussa kierrossa ei löytynyt opettajia.</div>';
+                return;
+            }
+
+            const ehdotukset = generoiKiertoEhdotukset(kierto, opettajat);
+            let paras = null;
+            let parasArvio = null;
+
+            ehdotukset.forEach(ehdotus => {
+                const arvio = arvioiKiertoEhdotus(kierto, ehdotus);
+                if (!parasArvio || arvio.pisteet < parasArvio.pisteet) {
+                    paras = ehdotus;
+                    parasArvio = arvio;
+                }
+            });
+
+            naytaKiertotestaajanTulos(kierto, opettajat, parasArvio, paras);
         }
 
         function avaaKiertotestaajaNakyma() {
@@ -2215,8 +2343,11 @@
             document.getElementById('muodosta-wilma').addEventListener('click', async () => { try { await muodostaWilmaViesti(); } catch (err) { alert(err.message); } });
             document.getElementById('wilma-ope').addEventListener('change', () => { paivitaWilmaRyhmat(); });
 
-            document.getElementById('avaa-massamuutos').addEventListener('click', avaaMassamuutosNakyma);
-            document.getElementById('takaisin-massamuutoksesta').addEventListener('click', suljeMassamuutosNakyma);
+            \1
+            document.getElementById('avaa-kiertotestaaja').addEventListener('click', avaaKiertotestaajaNakyma);
+            \1
+            document.getElementById('takaisin-kiertotestaajasta').addEventListener('click', suljeKiertotestaajaNakyma);
+            document.getElementById('laske-paras-jako').addEventListener('click', laskeParasKiertoJako);
             document.getElementById('hae-massamuutos-tunnit').addEventListener('click', haeMassamuutosTunnitJaRenderoi);
             document.getElementById('massamuutos-valitse-kaikki').addEventListener('click', valitseKaikkiMassamuutoksessa);
             document.getElementById('massamuutos-poista-kaikki').addEventListener('click', poistaKaikkiValinnatMassamuutoksessa);
