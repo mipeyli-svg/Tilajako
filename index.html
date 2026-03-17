@@ -894,9 +894,9 @@
         }
 
         function normalisoiAika(aika) {
-            if (!aika) return "";
-            return String(aika).trim().replace('.', ':');
-        }
+    if (!aika) return "";
+    return String(aika).trim().replace('.', ':');
+}
 
 function aikaMinuuteiksi(aika) {
     if (!aika) return 0;
@@ -913,7 +913,9 @@ function onkoYksoistunti(tunti) {
     const kesto = loppu - alku;
 
     return kesto > 0 && kesto <= 60;
-    function haeVakioKokoontuminen(paikka) {
+}
+
+function haeVakioKokoontuminen(paikka) {
     const p = String(paikka || '').trim().toLowerCase();
 
     if (p === 'yläsali' || p === 'alasali') {
@@ -922,9 +924,8 @@ function onkoYksoistunti(tunti) {
 
     return '';
 }
-}
 
-        function csvRiviOsiksi(rivi) {
+function csvRiviOsiksi(rivi) {
             const tulos = [];
             let kentta = "";
             let lainaus = false;
