@@ -899,6 +899,13 @@
         }
 
         function aikaMinuuteiksi(aika) {
+            function onkoYksoistunti(tunti) {
+    const alku = aikaMinuuteiksi(tunti.alku);
+    const loppu = aikaMinuuteiksi(tunti.loppu);
+    const kesto = loppu - alku;
+
+    return kesto > 0 && kesto <= 60;
+}
             if (!aika) return 0;
             const siistitty = String(aika).trim().replace('.', ':');
             if (!siistitty.includes(':')) return 0;
@@ -1783,170 +1790,194 @@
                 });
         }
 
-        async function muodostaWilmaViesti() {
-            const opettaja = document.getElementById('wilma-ope').value;
-            const ryhma = document.getElementById('wilma-ryhma').value;
-            const alkuviikko = Number(document.getElementById('wilma-alkuviikko').value);
-            const viikkomaarat = Number(document.getElementById('wilma-viikkomaarat').value);
+       async function muodostaWilmaViesti() {
+    const opettaja = document.getElementById('wilma-ope').value;
+    const ryhma = document.getElementById('wilma-ryhma').value;
+    const alkuviikko = Number(document.getElementById('wilma-alkuviikko').value);
+    const viikkomaarat = Number(document.getElementById('wilma-viikkomaarat').value);
 
-            if (!opettaja) {
-                alert('Valitse opettaja.');
-                return;
-            }
+    if (!opettaja) {
+        alert('Valitse opettaja.');
+        return;
+    }
 
-            if (!ryhma) {
-                alert('Valitse ryhmä.');
-                return;
-            }
+    if (!ryhma) {
+        alert('Valitse ryhmä.');
+        return;
+    }
 
-            if (isNaN(alkuviikko) || alkuviikko < 1 || alkuviikko > 52) {
-                alert('Anna alkuviikko väliltä 1–52.');
-                return;
-            }
+    if (isNaN(alkuviikko) || alkuviikko < 1 || alkuviikko > 52) {
+        alert('Anna alkuviikko väliltä 1–52.');
+        return;
+    }
 
-            if (isNaN(viikkomaarat) || viikkomaarat < 1 || viikkomaarat > 30) {
-                alert('Anna viikkomäärä väliltä 1–30.');
-                return;
-            }
+    if (isNaN(viikkomaarat) || viikkomaarat < 1 || viikkomaarat > 30) {
+        alert('Anna viikkomäärä väliltä 1–30.');
+        return;
+    }
 
-            const {
-                Document,
-                Packer,
-                Paragraph,
-                Table,
-                TableRow,
-                TableCell,
-                WidthType,
-                TextRun,
-                HeadingLevel,
-                BorderStyle
-            } = window.docx;
+    const {
+        Document,
+        Packer,
+        Paragraph,
+        Table,
+        TableRow,
+        TableCell,
+        WidthType,
+        TextRun,
+        HeadingLevel,
+        BorderStyle
+    } = window.docx;
 
-            function teeOtsikkoSolu(teksti, widthPercent) {
-                return new TableCell({
-                    width: {
-                        size: widthPercent,
-                        type: WidthType.PERCENTAGE
-                    },
+    function teeOtsikkoSolu(teksti, widthPercent) {
+        return new TableCell({
+            width: {
+                size: widthPercent,
+                type: WidthType.PERCENTAGE
+            },
+            children: [
+                new Paragraph({
                     children: [
-                        new Paragraph({
-                            children: [
-                                new TextRun({
-                                    text: teksti,
-                                    bold: true
-                                })
-                            ]
+                        new TextRun({
+                            text: teksti,
+                            bold: true
                         })
                     ]
-                });
-            }
+                })
+            ]
+        });
+    }
 
-            function teeTekstiSolu(teksti, widthPercent, bold = false) {
-                return new TableCell({
-                    width: {
-                        size: widthPercent,
-                        type: WidthType.PERCENTAGE
-                    },
+    function teeTekstiSolu(teksti, widthPercent, bold = false) {
+        return new TableCell({
+            width: {
+                size: widthPercent,
+                type: WidthType.PERCENTAGE
+            },
+            children: [
+                new Paragraph({
                     children: [
-                        new Paragraph({
-                            children: [
-                                new TextRun({
-                                    text: teksti || '',
-                                    bold
-                                })
-                            ]
+                        new TextRun({
+                            text: teksti || '',
+                            bold
                         })
                     ]
-                });
+                })
+            ]
+        });
+    }
+
+    function teeMoniriviSolu(rivit, widthPercent, bold = false) {
+        return new TableCell({
+            width: {
+                size: widthPercent,
+                type: WidthType.PERCENTAGE
+            },
+            children: rivit.map(rivi =>
+                new Paragraph({
+                    children: [
+                        new TextRun({
+                            text: rivi || '',
+                            bold
+                        })
+                    ]
+                })
+            )
+        });
+    }
+
+    let viikko = alkuviikko;
+    let loppuviikko = alkuviikko + viikkomaarat - 1;
+    while (loppuviikko > 52) loppuviikko -= 52;
+
+    const rows = [];
+
+    rows.push(
+        new TableRow({
+            tableHeader: true,
+            children: [
+                teeOtsikkoSolu('Vko', 8),
+                teeOtsikkoSolu('Päivä / aika', 22),
+                teeOtsikkoSolu('Liikuntatunnin aihe/paikka', 26),
+                teeOtsikkoSolu('Kokoontuminen', 22),
+                teeOtsikkoSolu('Muuta huomioitavaa', 22)
+            ]
+        })
+    );
+
+    for (let i = 0; i < viikkomaarat; i++) {
+        const tunnit = haeRyhmanTunnitViikolle(opettaja, ryhma, viikko);
+
+        tunnit.forEach(tunti => {
+            const pvmTeksti = tunti.pvm ? muodostaPvmJaPaiva(tunti.pvm) : tunti.paiva;
+            const aikaTeksti = `klo ${tunti.alku}–${tunti.loppu}`;
+
+            const aihePaikkaRivit = [tunti.paikka || ''];
+            if (onkoYksoistunti(tunti)) {
+                aihePaikkaRivit.push('Yksöistunti');
             }
-
-            let viikko = alkuviikko;
-            let loppuviikko = alkuviikko + viikkomaarat - 1;
-            while (loppuviikko > 52) loppuviikko -= 52;
-
-            const rows = [];
 
             rows.push(
                 new TableRow({
-                    tableHeader: true,
                     children: [
-                        teeOtsikkoSolu('Vko', 8),
-                        teeOtsikkoSolu('Päivä / aika', 24),
-                        teeOtsikkoSolu('Liikuntatunnin aihe/paikka', 24),
-                        teeOtsikkoSolu('Kokoontuminen', 22),
-                        teeOtsikkoSolu('Muuta huomioitavaa', 22)
+                        teeTekstiSolu(String(viikko), 8),
+                        teeMoniriviSolu([pvmTeksti, aikaTeksti], 22),
+                        teeMoniriviSolu(aihePaikkaRivit, 26),
+                        teeTekstiSolu('', 22, true),
+                        teeTekstiSolu('', 22, false)
                     ]
                 })
             );
+        });
 
-            for (let i = 0; i < viikkomaarat; i++) {
-                const tunnit = haeRyhmanTunnitViikolle(opettaja, ryhma, viikko);
+        viikko++;
+        if (viikko > 52) viikko = 1;
+    }
 
-                tunnit.forEach(tunti => {
-                    const pvmTeksti = tunti.pvm ? muodostaPvmJaPaiva(tunti.pvm) : tunti.paiva;
-                    const paivaJaAika = `${pvmTeksti} klo ${tunti.alku}–${tunti.loppu}`;
-
-                    rows.push(
-                        new TableRow({
-                            children: [
-                                teeTekstiSolu(String(viikko), 8),
-                                teeTekstiSolu(paivaJaAika, 24),
-                                teeTekstiSolu(tunti.paikka || '', 24),
-                                teeTekstiSolu('', 22, true),
-                                teeTekstiSolu('', 22, false)
-                            ]
-                        })
-                    );
-                });
-
-                viikko++;
-                if (viikko > 52) viikko = 1;
-            }
-
-            const doc = new Document({
-                sections: [
-                    {
-                        children: [
-                            new Paragraph({
-                                text: `Liikuntatiedot ryhmälle ${ryhma}, opettaja ${opettaja}`,
-                                heading: HeadingLevel.HEADING_1
-                            }),
-                            new Paragraph({
-                                text: `Viikot ${alkuviikko}–${loppuviikko}`
-                            }),
-                            new Paragraph({ text: '' }),
-                            new Table({
-                                width: {
-                                    size: 100,
-                                    type: WidthType.PERCENTAGE
-                                },
-                                borders: {
-                                    top: { style: BorderStyle.SINGLE, size: 1, color: "999999" },
-                                    bottom: { style: BorderStyle.SINGLE, size: 1, color: "999999" },
-                                    left: { style: BorderStyle.SINGLE, size: 1, color: "999999" },
-                                    right: { style: BorderStyle.SINGLE, size: 1, color: "999999" },
-                                    insideHorizontal: { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" },
-                                    insideVertical: { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" }
-                                },
-                                rows
-                            })
-                        ]
-                    }
+    const doc = new Document({
+        sections: [
+            {
+                children: [
+                    new Paragraph({
+                        text: `Liikuntatiedot ryhmälle ${ryhma}, opettaja ${opettaja}`,
+                        heading: HeadingLevel.HEADING_1
+                    }),
+                    new Paragraph({
+                        text: `Viikot ${alkuviikko}–${loppuviikko}`
+                    }),
+                    new Paragraph({ text: '' }),
+                    new Table({
+                        width: {
+                            size: 100,
+                            type: WidthType.PERCENTAGE
+                        },
+                        borders: {
+                            top: { style: BorderStyle.SINGLE, size: 1, color: "999999" },
+                            bottom: { style: BorderStyle.SINGLE, size: 1, color: "999999" },
+                            left: { style: BorderStyle.SINGLE, size: 1, color: "999999" },
+                            right: { style: BorderStyle.SINGLE, size: 1, color: "999999" },
+                            insideHorizontal: { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" },
+                            insideVertical: { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" }
+                        },
+                        rows
+                    })
                 ]
-            });
+            }
+        ]
+    });
 
-            const blob = await Packer.toBlob(doc);
-            const fileName = `wilma_${ryhma}_${opettaja}_vko_${alkuviikko}_${loppuviikko}.docx`;
+    const blob = await Packer.toBlob(doc);
+    const fileName = `wilma_${ryhma}_${opettaja}_vko_${alkuviikko}_${loppuviikko}.docx`;
 
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = fileName;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            URL.revokeObjectURL(url);
-        }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+}
 
         function renderoiMassamuutosLista(tunnit) {
             const container = document.getElementById('massamuutos-lista');
