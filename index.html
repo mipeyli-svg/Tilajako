@@ -677,7 +677,7 @@
 
             <div class="viikkohyppy">
                 <label for="viikko-input">Siirry viikolle:</label>
-                <input id="viikko-input" type="number" min="1" max="52" placeholder="1-52">
+                <input id="viikko-input" type="number" min="1" max="53" placeholder="1-53">
                 <button id="siirry-viikolle">Siirry</button>
             </div>
 
@@ -711,7 +711,7 @@
                     <select id="wilma-ryhma"></select>
 
                     <label for="wilma-alkuviikko">Alkuviikko:</label>
-                    <input id="wilma-alkuviikko" type="number" min="1" max="52">
+                    <input id="wilma-alkuviikko" type="number" min="1" max="53">
 
                     <label for="wilma-viikkomaarat">Viikkoja:</label>
                     <input id="wilma-viikkomaarat" type="number" min="1" max="30" value="6">
@@ -720,7 +720,7 @@
                 </div>
 
                 <div class="wilma-help">
-                    Muodostaa Word-tiedoston, jossa on Wilmaan sopiva taulukko. Kokoontuminen- ja Muuta huomioitavaa -sarakkeet jäävät tyhjiksi. Kokoontuminen-sarake on valmiiksi lihavoitu.
+                    Muodostaa Word-tiedoston, jossa näkyvät myös loma- ja arkipyhäpäivät. Yläsali- ja Alasali-tunneille kokoontuminen tulee automaattisesti muodossa Koululla.
                 </div>
             </div>
         </div>
@@ -740,7 +740,7 @@
                     <select id="massamuutos-ope"></select>
 
                     <label for="massamuutos-viikko">Viikko:</label>
-                    <input id="massamuutos-viikko" type="number" min="1" max="52">
+                    <input id="massamuutos-viikko" type="number" min="1" max="53">
 
                     <button id="hae-massamuutos-tunnit">Hae viikon tunnit</button>
                 </div>
@@ -791,7 +791,7 @@
     <script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
 
     <script>
-        /*
+           /*
         ============================================================
         YLLÄPITOASETUKSET – MUOKKAA VAIN TÄTÄ BLOKKIA TARVITTAESSA
         ============================================================
@@ -814,25 +814,19 @@
         const YLLAPITO_ASETUKSET = {
             sheetUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRNc9D23NHyoU0H5tLM86bd5w-7E318BH0RLa3SLcgy1xmkENyDY6yCliA64Iyagsff6SYAFAwlQKfp/pub?output=csv',
             appsScriptUrl: 'https://script.google.com/macros/s/AKfycbzV0h8icVctrXg9ykg83eaukyZZJauOEXiHBbapCV5PoUUtHwtpj-yuleowVtGnuoUO/exec',
-
             opettajat: ["Mypi", "Hanna", "Päivi", "Jenni", "Tuomas"],
-
             aloitusViikko: 48,
             lukuvuodenAloitusKuukausiPaiva: '11-24',
-            eiKierraViikot: [42, 52, 1, 8],
-
-            wilmaViesti: {
-                otsikko: ({ ryhma, opettaja, alkuviikko, loppuviikko }) =>
-                    `Liikuntapaikat ryhmälle ${ryhma}, opettaja ${opettaja}, viikoille ${alkuviikko}–${loppuviikko}`,
-
-                aloitus: ({ ryhma }) =>
-                    `Hei,\n` +
-                    `tässä ryhmän ${ryhma} liikuntapaikat seuraaville viikoille.`,
-
-                viikkoIlmanTunteja: `- Ei liikuntatunteja`,
-                lopetus: `Mahdollisista muutoksista tiedotetaan Wilmassa.`
+            eiKierraViikot: [42, 8],
+            lomat: {
+                syyslomaViikot: [42],
+                hiihtolomaViikot: [8],
+                joululoma: {
+                    alkaa: '12-21',
+                    loppuu: '01-06',
+                    nimi: 'Joululoma'
+                }
             },
-
             lahtoTilat: {
                 2: ["Yläsali", "Alasali", "Alasali", "Yläsali", "Alasali"],
                 3: ["Muualla", "Alasali", "Yläsali", "Yläsali", "Muualla"],
@@ -872,9 +866,7 @@
         let viimeksiRenderoityViikko = null;
         let viikonTilaCache = new Map();
 
-        function tyhjennaViikkoCache() {
-            viikonTilaCache.clear();
-        }
+        function tyhjennaViikkoCache() { viikonTilaCache.clear(); }
 
         function haeViikkonumero(d) {
             d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
@@ -894,46 +886,39 @@
         }
 
         function normalisoiAika(aika) {
-    if (!aika) return "";
-    return String(aika).trim().replace('.', ':');
-}
+            if (!aika) return "";
+            return String(aika).trim().replace('.', ':');
+        }
 
-function aikaMinuuteiksi(aika) {
-    if (!aika) return 0;
-    const siistitty = String(aika).trim().replace('.', ':');
-    if (!siistitty.includes(':')) return 0;
-    const [h, m] = siistitty.split(':').map(Number);
-    if (isNaN(h) || isNaN(m)) return 0;
-    return h * 60 + m;
-}
+        function aikaMinuuteiksi(aika) {
+            if (!aika) return 0;
+            const siistitty = String(aika).trim().replace('.', ':');
+            if (!siistitty.includes(':')) return 0;
+            const [h, m] = siistitty.split(':').map(Number);
+            if (isNaN(h) || isNaN(m)) return 0;
+            return h * 60 + m;
+        }
 
-function onkoYksoistunti(tunti) {
-    const alku = aikaMinuuteiksi(tunti.alku);
-    const loppu = aikaMinuuteiksi(tunti.loppu);
-    const kesto = loppu - alku;
+        function onkoYksoistunti(tunti) {
+            const alku = aikaMinuuteiksi(tunti.alku);
+            const loppu = aikaMinuuteiksi(tunti.loppu);
+            const kesto = loppu - alku;
+            return kesto > 0 && kesto <= 60;
+        }
 
-    return kesto > 0 && kesto <= 60;
-}
+        function haeVakioKokoontuminen(paikka) {
+            const p = String(paikka || '').trim().toLowerCase();
+            if (p === 'yläsali' || p === 'alasali') return 'Koululla';
+            return '';
+        }
 
-function haeVakioKokoontuminen(paikka) {
-    const p = String(paikka || '').trim().toLowerCase();
-
-    if (p === 'yläsali' || p === 'alasali') {
-        return 'Koululla';
-    }
-
-    return '';
-}
-
-function csvRiviOsiksi(rivi) {
+        function csvRiviOsiksi(rivi) {
             const tulos = [];
             let kentta = "";
             let lainaus = false;
-
             for (let i = 0; i < rivi.length; i++) {
                 const merkki = rivi[i];
                 const seuraava = rivi[i + 1];
-
                 if (merkki === '"') {
                     if (lainaus && seuraava === '"') {
                         kentta += '"';
@@ -948,7 +933,6 @@ function csvRiviOsiksi(rivi) {
                     kentta += merkki;
                 }
             }
-
             tulos.push(kentta);
             return tulos.map(x => x.trim());
         }
@@ -956,10 +940,8 @@ function csvRiviOsiksi(rivi) {
         function parsiCsvTapahtumiksi(csvText) {
             const rivit = csvText.split(/\r?\n/).slice(1).filter(r => r.trim() !== "");
             const tapahtumat = [];
-
             rivit.forEach(rivi => {
                 const osat = csvRiviOsiksi(rivi);
-
                 if (osat.length >= 7) {
                     tapahtumat.push({
                         ope: osat[0] ? osat[0].trim() : "",
@@ -972,35 +954,27 @@ function csvRiviOsiksi(rivi) {
                     });
                 }
             });
-
             return tapahtumat;
         }
 
         function rakennaGroupedBaseCache(tapahtumat) {
             const paivat = {};
             viikonpaivat.forEach(paiva => paivat[paiva] = { tunnit: [], blokit: [] });
-
-            tapahtumat.forEach(t => {
-                if (paivat[t.paiva]) paivat[t.paiva].tunnit.push(t);
-            });
-
+            tapahtumat.forEach(t => { if (paivat[t.paiva]) paivat[t.paiva].tunnit.push(t); });
             viikonpaivat.forEach(paiva => {
                 const tunnit = paivat[paiva].tunnit;
-
                 tunnit.sort((a, b) => {
                     const aikaEro = aikaMinuuteiksi(a.alku) - aikaMinuuteiksi(b.alku);
                     if (aikaEro !== 0) return aikaEro;
                     if ((a.kierto || 0) !== (b.kierto || 0)) return (a.kierto || 0) - (b.kierto || 0);
                     return haeOpettajaIndeksi(a.ope) - haeOpettajaIndeksi(b.ope);
                 });
-
                 const blokitMap = new Map();
                 tunnit.forEach(t => {
                     const avain = `${t.alku}|${t.loppu}|${t.kierto > 0 ? t.kierto : "vapaa"}`;
                     if (!blokitMap.has(avain)) blokitMap.set(avain, []);
                     blokitMap.get(avain).push(t);
                 });
-
                 paivat[paiva].blokit = Array.from(blokitMap.entries())
                     .sort((a, b) => aikaMinuuteiksi(a[0].split('|')[0]) - aikaMinuuteiksi(b[0].split('|')[0]))
                     .map(([avain, tunnit]) => ({
@@ -1008,13 +982,21 @@ function csvRiviOsiksi(rivi) {
                         tunnit: [...tunnit].sort((a, b) => haeOpettajaIndeksi(a.ope) - haeOpettajaIndeksi(b.ope))
                     }));
             });
-
             return paivat;
         }
 
         function parseMonthDayToDate(monthDay, year) {
             const [month, day] = String(monthDay).split('-').map(Number);
             return new Date(year, month - 1, day);
+        }
+
+        function muodostaLyhytPvm(date) {
+            return `${date.getDate()}.${date.getMonth() + 1}.`;
+        }
+
+        function muodostaPvmJaPaiva(date) {
+            const viikonpaivatLyhyet = ['su', 'ma', 'ti', 'ke', 'to', 'pe', 'la'];
+            return `${viikonpaivatLyhyet[date.getDay()]} ${date.getDate()}.${date.getMonth() + 1}.`;
         }
 
         function haeLukuvuodenAloitusVuosiPaivasta(date) {
@@ -1029,31 +1011,23 @@ function csvRiviOsiksi(rivi) {
             return pvm;
         }
 
-        function muodostaLyhytPvm(date) {
-            return `${date.getDate()}.${date.getMonth() + 1}.`;
-        }
-
-        function muodostaPvmJaPaiva(date) {
-            const viikonpaivatLyhyet = ['su', 'ma', 'ti', 'ke', 'to', 'pe', 'la'];
-            return `${viikonpaivatLyhyet[date.getDay()]} ${date.getDate()}.${date.getMonth() + 1}.`;
-        }
-
         function haeIsoViikonMaanantai(vuosi, viikko) {
             const tammikuunNeljäs = new Date(vuosi, 0, 4);
             const viikonpaiva = tammikuunNeljäs.getDay() || 7;
             const viikon1Maanantai = new Date(tammikuunNeljäs);
             viikon1Maanantai.setDate(tammikuunNeljäs.getDate() - viikonpaiva + 1);
-
             const maanantai = new Date(viikon1Maanantai);
             maanantai.setDate(viikon1Maanantai.getDate() + (viikko - 1) * 7);
             maanantai.setHours(0, 0, 0, 0);
             return maanantai;
         }
 
+        function vuodenViikkojenMaara(vuosi) {
+            return haeViikkonumero(new Date(vuosi, 11, 28));
+        }
+
         function haeKalenterivuosiViikolle(viikkoNumero, lukuvuodenAloitusVuosi = valittuLukuvuodenAloitusVuosi) {
-            return viikkoNumero < ASETUKSET.aloitusViikko
-                ? lukuvuodenAloitusVuosi + 1
-                : lukuvuodenAloitusVuosi;
+            return viikkoNumero < ASETUKSET.aloitusViikko ? lukuvuodenAloitusVuosi + 1 : lukuvuodenAloitusVuosi;
         }
 
         function haeViikonPaivamaarat(viikkoNumero, lukuvuodenAloitusVuosi = valittuLukuvuodenAloitusVuosi) {
@@ -1061,34 +1035,114 @@ function csvRiviOsiksi(rivi) {
             const tulos = {};
             const kalenterivuosi = haeKalenterivuosiViikolle(viikkoNumero, lukuvuodenAloitusVuosi);
             const viikonMaanantai = haeIsoViikonMaanantai(kalenterivuosi, viikkoNumero);
-
             viikonpaivat.forEach((nimi, i) => {
                 const pvm = new Date(viikonMaanantai);
                 pvm.setDate(viikonMaanantai.getDate() + i);
-                tulos[nimi] = {
-                    lyhytPaiva: viikonpaivatLyhyet[i],
-                    teksti: muodostaLyhytPvm(pvm),
-                    date: pvm
-                };
+                tulos[nimi] = { lyhytPaiva: viikonpaivatLyhyet[i], teksti: muodostaLyhytPvm(pvm), date: pvm };
             });
-
             return tulos;
+        }
+
+        function lisaaPaivia(date, paivia) {
+            const d = new Date(date);
+            d.setDate(d.getDate() + paivia);
+            return d;
+        }
+
+        function onSamaPvm(a, b) {
+            return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+        }
+
+        function onValilla(date, alku, loppu) {
+            const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            const a = new Date(alku.getFullYear(), alku.getMonth(), alku.getDate());
+            const l = new Date(loppu.getFullYear(), loppu.getMonth(), loppu.getDate());
+            return d >= a && d <= l;
+        }
+
+        function laskePaasiaissunnuntai(vuosi) {
+            const a = vuosi % 19;
+            const b = Math.floor(vuosi / 100);
+            const c = vuosi % 100;
+            const d = Math.floor(b / 4);
+            const e = b % 4;
+            const f = Math.floor((b + 8) / 25);
+            const g = Math.floor((b - f + 1) / 3);
+            const h = (19 * a + b - d - g + 15) % 30;
+            const i = Math.floor(c / 4);
+            const k = c % 4;
+            const l = (32 + 2 * e + 2 * i - h - k) % 7;
+            const m = Math.floor((a + 11 * h + 22 * l) / 451);
+            const month = Math.floor((h + l - 7 * m + 114) / 31);
+            const day = ((h + l - 7 * m + 114) % 31) + 1;
+            return new Date(vuosi, month - 1, day);
+        }
+
+        function haeArkipyhanNimi(date) {
+            const p = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            const vuosi = p.getFullYear();
+            const monthDay = `${String(p.getMonth() + 1).padStart(2, '0')}-${String(p.getDate()).padStart(2, '0')}`;
+            const kiinteat = {
+                '01-01': 'Uudenvuodenpäivä',
+                '01-06': 'Loppiainen',
+                '05-01': 'Vappu',
+                '12-06': 'Itsenäisyyspäivä',
+                '12-24': 'Jouluaatto',
+                '12-25': 'Joulupäivä',
+                '12-26': 'Tapaninpäivä'
+            };
+            if (kiinteat[monthDay]) return kiinteat[monthDay];
+            const paasiainen = laskePaasiaissunnuntai(vuosi);
+            const pitkäperjantai = lisaaPaivia(paasiainen, -2);
+            const toinenPaasiaispv = lisaaPaivia(paasiainen, 1);
+            const helatorstai = lisaaPaivia(paasiainen, 39);
+            if (onSamaPvm(p, pitkäperjantai)) return 'Pitkäperjantai';
+            if (onSamaPvm(p, toinenPaasiaispv)) return '2. pääsiäispäivä';
+            if (onSamaPvm(p, helatorstai)) return 'Helatorstai';
+            return '';
+        }
+
+        function haeLomapaivanNimi(date, lukuvuodenAloitusVuosi = valittuLukuvuodenAloitusVuosi) {
+            const viikko = haeViikkonumero(date);
+            if (ASETUKSET.lomat?.syyslomaViikot?.includes(viikko)) return 'Syysloma';
+            if (ASETUKSET.lomat?.hiihtolomaViikot?.includes(viikko)) return 'Hiihtoloma';
+            const joululoma = ASETUKSET.lomat?.joululoma;
+            if (joululoma) {
+                const alku = parseMonthDayToDate(joululoma.alkaa, lukuvuodenAloitusVuosi);
+                const loppu = parseMonthDayToDate(joululoma.loppuu, lukuvuodenAloitusVuosi + 1);
+                if (onValilla(date, alku, loppu)) return joululoma.nimi || 'Joululoma';
+            }
+            return '';
+        }
+
+        function haePoissaoloTiedot(date, lukuvuodenAloitusVuosi = valittuLukuvuodenAloitusVuosi) {
+            const lomannimi = haeLomapaivanNimi(date, lukuvuodenAloitusVuosi);
+            if (lomannimi) return { onPoissa: true, nimi: lomannimi, tyyppi: 'loma' };
+            const pyha = haeArkipyhanNimi(date);
+            if (pyha) return { onPoissa: true, nimi: pyha, tyyppi: 'arkipyhä' };
+            return { onPoissa: false, nimi: '', tyyppi: '' };
+        }
+
+        function viikollaOnNormaaliaOpetusta(viikkoNumero, lukuvuodenAloitusVuosi = valittuLukuvuodenAloitusVuosi) {
+            const viikonPaivamaarat = haeViikonPaivamaarat(viikkoNumero, lukuvuodenAloitusVuosi);
+            return viikonpaivat.some(paiva => {
+                const pvm = viikonPaivamaarat[paiva]?.date;
+                if (!pvm) return false;
+                return !haePoissaoloTiedot(pvm, lukuvuodenAloitusVuosi).onPoissa;
+            });
         }
 
         function viikkoSiirtyma(viikkoNumero, kiertoPituus, lukuvuodenAloitusVuosi = valittuLukuvuodenAloitusVuosi) {
             const aloitus = haeLukuvuodenAloitusPvm(lukuvuodenAloitusVuosi);
             const kohdeVuosi = haeKalenterivuosiViikolle(viikkoNumero, lukuvuodenAloitusVuosi);
             const kohde = haeIsoViikonMaanantai(kohdeVuosi, viikkoNumero);
-
             let aktiivisiaViikkoja = 0;
             const laskuri = new Date(aloitus);
-
             while (laskuri < kohde) {
                 const viikonNumeroLaskurille = haeViikkonumero(laskuri);
-                if (!ASETUKSET.eiKierraViikot.includes(viikonNumeroLaskurille)) aktiivisiaViikkoja++;
+                if (viikollaOnNormaaliaOpetusta(viikonNumeroLaskurille, lukuvuodenAloitusVuosi)) aktiivisiaViikkoja++;
                 laskuri.setDate(laskuri.getDate() + 7);
             }
-
             return aktiivisiaViikkoja % kiertoPituus;
         }
 
@@ -1096,12 +1150,9 @@ function csvRiviOsiksi(rivi) {
             const tilat = tilatKierroksittain[kierto];
             const opettajaIndeksi = haeOpettajaIndeksi(opettaja);
             const lahtoTila = opettajaIndeksi >= 0 ? ASETUKSET.lahtoTilat?.[kierto]?.[opettajaIndeksi] : null;
-
             if (!tilat || !lahtoTila) return null;
-
             const lahtoIndeksi = tilat.indexOf(lahtoTila);
             if (lahtoIndeksi === -1) return null;
-
             const siirtyma = viikkoSiirtyma(viikkoNumero, kierto);
             return tilat[(lahtoIndeksi + siirtyma) % tilat.length];
         }
@@ -1111,30 +1162,16 @@ function csvRiviOsiksi(rivi) {
         }
 
         function teeOverrideAvain(viikkoNumero, paiva, alku, loppu, ope) {
-            return [String(viikkoNumero), String(paiva), String(alku), String(loppu), String(ope)]
-                .map(x => x.trim())
-                .join('|');
+            return [String(viikkoNumero), String(paiva), String(alku), String(loppu), String(ope)].map(x => x.trim()).join('|');
         }
 
         async function haeTilamuutokset(force = false) {
             if (overridesLoaded && !force) return;
-
-            const response = await fetch(appsScriptUrl + '?action=getOverrides&t=' + Date.now(), {
-                method: 'GET',
-                cache: 'no-store'
-            });
-
+            const response = await fetch(appsScriptUrl + '?action=getOverrides&t=' + Date.now(), { method: 'GET', cache: 'no-store' });
             const rawText = await response.text();
             let data;
-
-            try {
-                data = JSON.parse(rawText);
-            } catch (err) {
-                throw new Error('Apps Script ei palauttanut JSONia. Vastaus oli: ' + rawText.slice(0, 200));
-            }
-
+            try { data = JSON.parse(rawText); } catch (err) { throw new Error('Apps Script ei palauttanut JSONia. Vastaus oli: ' + rawText.slice(0, 200)); }
             if (!data.ok) throw new Error(data.error || 'Tilamuutosten haku epäonnistui');
-
             overridesCache = data.items || [];
             overridesLoaded = true;
             tyhjennaViikkoCache();
@@ -1142,58 +1179,26 @@ function csvRiviOsiksi(rivi) {
 
         function paivitaOverrideCacheTallennuksenJalkeen(muutos) {
             const avain = teeOverrideAvain(muutos.viikko, muutos.paiva, muutos.alku, muutos.loppu, muutos.ope);
-
-            overridesCache = overridesCache.filter(item => {
-                const itemAvain = teeOverrideAvain(item.viikko, item.paiva, item.alku, item.loppu, item.ope);
-                return itemAvain !== avain;
-            });
-
-            overridesCache.push({
-                viikko: muutos.viikko,
-                paiva: muutos.paiva,
-                alku: muutos.alku,
-                loppu: muutos.loppu,
-                ope: muutos.ope,
-                korvaava_tila: muutos.korvaava_tila,
-                voimassa: true
-            });
-
+            overridesCache = overridesCache.filter(item => teeOverrideAvain(item.viikko, item.paiva, item.alku, item.loppu, item.ope) !== avain);
+            overridesCache.push({ ...muutos, voimassa: true });
             tyhjennaViikkoCache();
         }
 
         function poistaOverrideCachesta(muutos) {
             const avain = teeOverrideAvain(muutos.viikko, muutos.paiva, muutos.alku, muutos.loppu, muutos.ope);
-
-            overridesCache = overridesCache.filter(item => {
-                const itemAvain = teeOverrideAvain(item.viikko, item.paiva, item.alku, item.loppu, item.ope);
-                return itemAvain !== avain;
-            });
-
+            overridesCache = overridesCache.filter(item => teeOverrideAvain(item.viikko, item.paiva, item.alku, item.loppu, item.ope) !== avain);
             tyhjennaViikkoCache();
         }
 
         function haeManuaalinenTila(viikkoNumero, tunti) {
             const avain = teeOverrideAvain(viikkoNumero, tunti.paiva, tunti.alku, tunti.loppu, tunti.ope);
-
-            const match = overridesCache.find(item => {
-                const itemAvain = teeOverrideAvain(item.viikko, item.paiva, item.alku, item.loppu, item.ope);
-                return itemAvain === avain && String(item.voimassa).toUpperCase() !== 'FALSE';
-            });
-
+            const match = overridesCache.find(item => teeOverrideAvain(item.viikko, item.paiva, item.alku, item.loppu, item.ope) === avain && String(item.voimassa).toUpperCase() !== 'FALSE');
             return match?.korvaava_tila || '';
         }
 
         function avaaTilaModal(tunti, viikkoNumero) {
-            aktiivinenMuokkaus = {
-                viikko: viikkoNumero,
-                paiva: tunti.paiva,
-                alku: tunti.alku,
-                loppu: tunti.loppu,
-                ope: tunti.ope
-            };
-
+            aktiivinenMuokkaus = { viikko: viikkoNumero, paiva: tunti.paiva, alku: tunti.alku, loppu: tunti.loppu, ope: tunti.ope };
             const viikonPaivamaarat = haeViikonPaivamaarat(viikkoNumero);
-
             document.getElementById('modal-ope').textContent = tunti.ope;
             document.getElementById('modal-paiva').textContent = tunti.paiva;
             document.getElementById('modal-pvm').textContent = viikonPaivamaarat[tunti.paiva]?.teksti || '';
@@ -1216,53 +1221,27 @@ function csvRiviOsiksi(rivi) {
 
         async function tallennaTilaMuutos() {
             if (!aktiivinenMuokkaus) return;
-
             const tallennaNappi = document.getElementById('modal-tallenna');
             const palautaNappi = document.getElementById('modal-palauta');
             const peruutaNappi = document.getElementById('modal-peruuta');
             const alkuperainenTeksti = tallennaNappi.textContent;
-
             try {
                 const uusiTila = document.getElementById('modal-uusi-tila').value.trim();
                 if (!uusiTila) {
                     alert('Kirjoita paikka tai käytä "Palauta automaattiseksi".');
                     return;
                 }
-
                 tallennaNappi.disabled = true;
                 palautaNappi.disabled = true;
                 peruutaNappi.disabled = true;
                 tallennaNappi.textContent = 'Tallennetaan...';
-
-                const payload = {
-                    action: 'saveOverride',
-                    viikko: aktiivinenMuokkaus.viikko,
-                    paiva: aktiivinenMuokkaus.paiva,
-                    alku: aktiivinenMuokkaus.alku,
-                    loppu: aktiivinenMuokkaus.loppu,
-                    ope: aktiivinenMuokkaus.ope,
-                    korvaava_tila: uusiTila
-                };
-
-                const response = await fetch(appsScriptUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify(payload)
-                });
-
+                const payload = { action: 'saveOverride', ...aktiivinenMuokkaus, korvaava_tila: uusiTila };
+                const response = await fetch(appsScriptUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
                 if (!response.ok) throw new Error(`Tallennus epäonnistui. HTTP ${response.status}`);
-
                 const rawText = await response.text();
                 let data;
-
-                try {
-                    data = JSON.parse(rawText);
-                } catch (err) {
-                    throw new Error('Tallennus ei palauttanut JSONia. Vastaus oli: ' + rawText.slice(0, 200));
-                }
-
+                try { data = JSON.parse(rawText); } catch (err) { throw new Error('Tallennus ei palauttanut JSONia. Vastaus oli: ' + rawText.slice(0, 200)); }
                 if (!data.ok) throw new Error(data.error || 'Tallennus epäonnistui');
-
                 paivitaOverrideCacheTallennuksenJalkeen(payload);
                 suljeTilaModal();
                 await renderoiNykyinenViikkoNopeasti();
@@ -1276,46 +1255,22 @@ function csvRiviOsiksi(rivi) {
 
         async function palautaAutomaattiseksi() {
             if (!aktiivinenMuokkaus) return;
-
             const tallennaNappi = document.getElementById('modal-tallenna');
             const palautaNappi = document.getElementById('modal-palauta');
             const peruutaNappi = document.getElementById('modal-peruuta');
             const alkuperainenTeksti = palautaNappi.textContent;
-
             try {
                 tallennaNappi.disabled = true;
                 palautaNappi.disabled = true;
                 peruutaNappi.disabled = true;
                 palautaNappi.textContent = 'Palautetaan...';
-
-                const payload = {
-                    action: 'clearOverride',
-                    viikko: aktiivinenMuokkaus.viikko,
-                    paiva: aktiivinenMuokkaus.paiva,
-                    alku: aktiivinenMuokkaus.alku,
-                    loppu: aktiivinenMuokkaus.loppu,
-                    ope: aktiivinenMuokkaus.ope
-                };
-
-                const response = await fetch(appsScriptUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify(payload)
-                });
-
+                const payload = { action: 'clearOverride', ...aktiivinenMuokkaus };
+                const response = await fetch(appsScriptUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
                 if (!response.ok) throw new Error(`Palautus epäonnistui. HTTP ${response.status}`);
-
                 const rawText = await response.text();
                 let data;
-
-                try {
-                    data = JSON.parse(rawText);
-                } catch (err) {
-                    throw new Error('Palautus ei palauttanut JSONia. Vastaus oli: ' + rawText.slice(0, 200));
-                }
-
+                try { data = JSON.parse(rawText); } catch (err) { throw new Error('Palautus ei palauttanut JSONia. Vastaus oli: ' + rawText.slice(0, 200)); }
                 if (!data.ok) throw new Error(data.error || 'Palautus epäonnistui');
-
                 poistaOverrideCachesta(payload);
                 suljeTilaModal();
                 await renderoiNykyinenViikkoNopeasti();
@@ -1330,101 +1285,83 @@ function csvRiviOsiksi(rivi) {
         function teeYhteenvetoKortti(otsikko, kierto, viikkoNumero) {
             const wrap = document.createElement('div');
             wrap.className = 'yhteenveto-laatikko';
-
             const title = document.createElement('div');
             title.className = 'yhteenveto-otsikko';
             title.textContent = otsikko;
             wrap.appendChild(title);
-
             const rivit = document.createElement('div');
             rivit.className = 'yhteenveto-rivit';
-
-            ASETUKSET.opettajat
-                .filter(ope => naytetaankoOpettaja(ope))
-                .forEach(ope => {
-                    const card = document.createElement('div');
-                    card.className = 'yhteenveto-kortti';
-                    card.style.backgroundColor = haeVari(ope);
-
-                    const nimi = document.createElement('span');
-                    nimi.className = 'nimi';
-                    nimi.textContent = ope;
-
-                    const tila = document.createElement('span');
-                    tila.className = 'tila';
-                    tila.textContent = haeOpettajanViikonTila(ope, kierto, viikkoNumero) || '—';
-
-                    card.appendChild(nimi);
-                    card.appendChild(tila);
-                    rivit.appendChild(card);
-                });
-
+            ASETUKSET.opettajat.filter(ope => naytetaankoOpettaja(ope)).forEach(ope => {
+                const card = document.createElement('div');
+                card.className = 'yhteenveto-kortti';
+                card.style.backgroundColor = haeVari(ope);
+                const nimi = document.createElement('span');
+                nimi.className = 'nimi';
+                nimi.textContent = ope;
+                const tila = document.createElement('span');
+                tila.className = 'tila';
+                tila.textContent = haeOpettajanViikonTila(ope, kierto, viikkoNumero) || '—';
+                card.appendChild(nimi);
+                card.appendChild(tila);
+                rivit.appendChild(card);
+            });
             wrap.appendChild(rivit);
             return wrap;
         }
 
-        function onkoVaakaNakyma() {
-            return window.matchMedia('(orientation: landscape)').matches;
-        }
+        function onkoVaakaNakyma() { return window.matchMedia('(orientation: landscape)').matches; }
 
         function rakennaViikonTilaData(viikkoNumero) {
             const cacheAvain = `${valittuLukuvuodenAloitusVuosi}|${viikkoNumero}|${valittuOpettaja}`;
-
             if (viikonTilaCache.has(cacheAvain)) return viikonTilaCache.get(cacheAvain);
-
             const viikonPaivamaarat = haeViikonPaivamaarat(viikkoNumero);
-            const tulos = { viikonPaivamaarat, paivat: {}, loytyiSisaltoa: false };
-
+            const tulos = { viikonPaivamaarat, paivat: {}, poissaolot: {}, loytyiSisaltoa: false };
             viikonpaivat.forEach(paiva => {
+                const paivaDate = viikonPaivamaarat[paiva]?.date;
+                const poissaolo = paivaDate ? haePoissaoloTiedot(paivaDate, valittuLukuvuodenAloitusVuosi) : { onPoissa: false };
+                if (poissaolo.onPoissa) {
+                    tulos.poissaolot[paiva] = poissaolo;
+                    tulos.loytyiSisaltoa = true;
+                    return;
+                }
                 const base = groupedBaseCache[paiva];
                 if (!base || !base.blokit.length) return;
-
                 const blokit = [];
-
                 base.blokit.forEach(blokki => {
                     const suodatetutTunnit = blokki.tunnit.filter(tunti => naytetaankoOpettaja(tunti.ope));
                     if (!suodatetutTunnit.length) return;
-
                     tulos.loytyiSisaltoa = true;
-
                     const eka = suodatetutTunnit[0];
                     const kiertoTyyppi = eka.kierto;
                     const onkoVapaa = !kiertoTyyppi || isNaN(kiertoTyyppi) || kiertoTyyppi === 0;
-                    const kiertoTeksti = onkoVapaa ? "Sopimuksen mukaan" : `${kiertoTyyppi}-kierto`;
+                    const kiertoTeksti = onkoVapaa ? 'Sopimuksen mukaan' : `${kiertoTyyppi}-kierto`;
                     const otsikkoAika = `${eka.alku} - ${eka.loppu}`;
-
                     const tunnit = suodatetutTunnit.map(tunti => {
-                        let opettajanTila = "";
-                        let lisaluokka = "";
-
+                        let opettajanTila = '';
+                        let lisaluokka = '';
                         const manuaalinenTila = haeManuaalinenTila(viikkoNumero, tunti);
-
                         if (manuaalinenTila) {
                             opettajanTila = manuaalinenTila;
-                            lisaluokka = "tila-poikkeus";
+                            lisaluokka = 'tila-poikkeus';
                         } else if (tunti.poikkeus) {
                             opettajanTila = tunti.poikkeus;
-                            lisaluokka = "tila-poikkeus";
+                            lisaluokka = 'tila-poikkeus';
                         } else if (onkoVapaa) {
-                            opettajanTila = "Sopivat keskenään";
-                            lisaluokka = "tila-vapaa";
+                            opettajanTila = 'Sopivat keskenään';
+                            lisaluokka = 'tila-vapaa';
                         } else if (kiertoTyyppi === 2 || kiertoTyyppi === 3 || kiertoTyyppi === 4) {
-                            opettajanTila = haeOpettajanViikonTila(tunti.ope, kiertoTyyppi, viikkoNumero) || "—";
+                            opettajanTila = haeOpettajanViikonTila(tunti.ope, kiertoTyyppi, viikkoNumero) || '—';
                         } else {
-                            const tilat = tilatKierroksittain[kiertoTyyppi] || ["—"];
+                            const tilat = tilatKierroksittain[kiertoTyyppi] || ['—'];
                             const indeksi = Math.max(0, haeOpettajaIndeksi(tunti.ope)) % tilat.length;
-                            opettajanTila = tilat[indeksi] || "—";
+                            opettajanTila = tilat[indeksi] || '—';
                         }
-
                         return { ...tunti, paikka: opettajanTila, opettajanTila, lisaluokka };
                     });
-
                     blokit.push({ kiertoTyyppi, onkoVapaa, kiertoTeksti, otsikkoAika, tunnit });
                 });
-
                 if (blokit.length) tulos.paivat[paiva] = blokit;
             });
-
             viikonTilaCache.set(cacheAvain, tulos);
             return tulos;
         }
@@ -1432,7 +1369,6 @@ function csvRiviOsiksi(rivi) {
         function renderoiPysty(viikonData, viikkoNumero) {
             const portraitDiv = document.getElementById('portrait-view');
             portraitDiv.innerHTML = '';
-
             if (!viikonData.loytyiSisaltoa) {
                 const tyhja = document.createElement('div');
                 tyhja.className = 'tyhja-teksti';
@@ -1440,20 +1376,28 @@ function csvRiviOsiksi(rivi) {
                 portraitDiv.appendChild(tyhja);
                 return;
             }
-
             viikonpaivat.forEach(paiva => {
+                const poissaolo = viikonData.poissaolot?.[paiva];
                 const blokit = viikonData.paivat[paiva];
+                if (poissaolo) {
+                    const paivaDivPysty = document.createElement('div');
+                    paivaDivPysty.className = 'paiva-laatikko';
+                    paivaDivPysty.innerHTML = `<div class="paiva-otsikko">${viikonData.viikonPaivamaarat[paiva]?.lyhytPaiva || paiva} ${viikonData.viikonPaivamaarat[paiva]?.teksti || ''}</div>`;
+                    const blokkiDivPysty = document.createElement('div');
+                    blokkiDivPysty.className = 'tuntiblokki';
+                    blokkiDivPysty.innerHTML = `<div class="kello-otsikko">${poissaolo.nimi}</div>`;
+                    paivaDivPysty.appendChild(blokkiDivPysty);
+                    portraitDiv.appendChild(paivaDivPysty);
+                    return;
+                }
                 if (!blokit || !blokit.length) return;
-
                 const paivaDivPysty = document.createElement('div');
                 paivaDivPysty.className = 'paiva-laatikko';
                 paivaDivPysty.innerHTML = `<div class="paiva-otsikko">${viikonData.viikonPaivamaarat[paiva]?.lyhytPaiva || paiva} ${viikonData.viikonPaivamaarat[paiva]?.teksti || ''}</div>`;
-
                 blokit.forEach(blokki => {
                     const blokkiDivPysty = document.createElement('div');
                     blokkiDivPysty.className = 'tuntiblokki';
                     blokkiDivPysty.innerHTML = `<div class="kello-otsikko">${blokki.otsikkoAika} <span>${blokki.kiertoTeksti}</span></div>`;
-
                     blokki.tunnit.forEach(tunti => {
                         const korttiPysty = document.createElement('div');
                         korttiPysty.className = 'tunti-kortti';
@@ -1472,10 +1416,8 @@ function csvRiviOsiksi(rivi) {
                         korttiPysty.addEventListener('click', () => avaaTilaModal(tunti, viikkoNumero));
                         blokkiDivPysty.appendChild(korttiPysty);
                     });
-
                     paivaDivPysty.appendChild(blokkiDivPysty);
                 });
-
                 portraitDiv.appendChild(paivaDivPysty);
             });
         }
@@ -1483,7 +1425,6 @@ function csvRiviOsiksi(rivi) {
         function renderoiVaaka(viikonData, viikkoNumero) {
             const landscapeDiv = document.getElementById('landscape-view');
             landscapeDiv.innerHTML = '';
-
             if (!viikonData.loytyiSisaltoa) {
                 const tyhja = document.createElement('div');
                 tyhja.className = 'tyhja-teksti';
@@ -1491,23 +1432,26 @@ function csvRiviOsiksi(rivi) {
                 landscapeDiv.appendChild(tyhja);
                 return;
             }
-
             const gridContainer = document.createElement('div');
             gridContainer.className = 'viikko-grid';
-
             viikonpaivat.forEach(paiva => {
+                const poissaolo = viikonData.poissaolot?.[paiva];
                 const blokit = viikonData.paivat[paiva];
+                if (poissaolo) {
+                    const paivaSarake = document.createElement('div');
+                    paivaSarake.className = 'paiva-sarake';
+                    paivaSarake.innerHTML = `<div class="sarake-otsikko">${viikonData.viikonPaivamaarat[paiva]?.lyhytPaiva || paiva}<br><span class="sarake-pvm">${viikonData.viikonPaivamaarat[paiva]?.teksti || ''}</span></div><div class="grid-blokki"><div class="grid-kello">${poissaolo.nimi}</div></div>`;
+                    gridContainer.appendChild(paivaSarake);
+                    return;
+                }
                 if (!blokit || !blokit.length) return;
-
                 const paivaSarake = document.createElement('div');
                 paivaSarake.className = 'paiva-sarake';
                 paivaSarake.innerHTML = `<div class="sarake-otsikko">${viikonData.viikonPaivamaarat[paiva]?.lyhytPaiva || paiva}<br><span class="sarake-pvm">${viikonData.viikonPaivamaarat[paiva]?.teksti || ''}</span></div>`;
-
                 blokit.forEach(blokki => {
                     const blokkiDivVaaka = document.createElement('div');
                     blokkiDivVaaka.className = 'grid-blokki';
                     blokkiDivVaaka.innerHTML = `<div class="grid-kello">${blokki.otsikkoAika} (${blokki.onkoVapaa ? 'Vapaa' : blokki.kiertoTyyppi + '-k'})</div>`;
-
                     blokki.tunnit.forEach(tunti => {
                         const korttiVaaka = document.createElement('div');
                         korttiVaaka.className = 'grid-kortti';
@@ -1522,47 +1466,33 @@ function csvRiviOsiksi(rivi) {
                         korttiVaaka.addEventListener('click', () => avaaTilaModal(tunti, viikkoNumero));
                         blokkiDivVaaka.appendChild(korttiVaaka);
                     });
-
                     paivaSarake.appendChild(blokkiDivVaaka);
                 });
-
                 gridContainer.appendChild(paivaSarake);
             });
-
             landscapeDiv.appendChild(gridContainer);
         }
 
         async function suorita(viikkoNumero = null, options = {}) {
             const { skipOverridesFetch = false } = options;
-
             try {
                 if (!csvCache) {
                     const response = await fetch(sheetUrl + '&t=' + Date.now());
                     csvCache = await response.text();
                 }
-
                 if (!parsedTapahtumatCache) parsedTapahtumatCache = parsiCsvTapahtumiksi(csvCache);
                 if (!groupedBaseCache) groupedBaseCache = rakennaGroupedBaseCache(parsedTapahtumatCache);
-
-                if (!skipOverridesFetch && !overridesLoaded) {
-                    await haeTilamuutokset();
-                }
-
+                if (!skipOverridesFetch && !overridesLoaded) await haeTilamuutokset();
                 if (viikkoNumero === null) viikkoNumero = haeViikkonumero(new Date());
-
                 viimeksiRenderoityViikko = viikkoNumero;
-
                 document.getElementById('viikko-naytto').textContent = `Viikko ${viikkoNumero}`;
                 document.getElementById('viikko-input').value = viikkoNumero;
-
                 const yhteenvetoDiv = document.getElementById('viikkoyhteenveto');
                 yhteenvetoDiv.innerHTML = '';
                 yhteenvetoDiv.appendChild(teeYhteenvetoKortti('Tämän viikon 2-kierto', 2, viikkoNumero));
                 yhteenvetoDiv.appendChild(teeYhteenvetoKortti('Tämän viikon 3-kierto', 3, viikkoNumero));
                 yhteenvetoDiv.appendChild(teeYhteenvetoKortti('Tämän viikon 4-kierto', 4, viikkoNumero));
-
                 const viikonData = rakennaViikonTilaData(viikkoNumero);
-
                 if (onkoVaakaNakyma()) {
                     document.getElementById('portrait-view').innerHTML = '';
                     renderoiVaaka(viikonData, viikkoNumero);
@@ -1579,26 +1509,22 @@ function csvRiviOsiksi(rivi) {
         function paivitaOpeSuodatin() {
             const select = document.getElementById('ope-suodatin');
             select.innerHTML = '<option value="Kaikki">Kaikki opettajat</option>';
-
             ASETUKSET.opettajat.forEach(ope => {
                 const option = document.createElement('option');
                 option.value = ope;
                 option.textContent = `Vain ${ope}`;
                 select.appendChild(option);
             });
-
             select.value = valittuOpettaja;
             if (select.value !== valittuOpettaja) {
-                valittuOpettaja = "Kaikki";
-                select.value = "Kaikki";
+                valittuOpettaja = 'Kaikki';
+                select.value = 'Kaikki';
             }
         }
 
         function paivitaWilmaOpettajat() {
             const select = document.getElementById('wilma-ope');
-            const opettajat = [...new Set((parsedTapahtumatCache || []).map(t => t.ope).filter(Boolean))]
-                .sort((a, b) => a.localeCompare(b, 'fi'));
-
+            const opettajat = [...new Set((parsedTapahtumatCache || []).map(t => t.ope).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fi'));
             select.innerHTML = '';
             opettajat.forEach(ope => {
                 const option = document.createElement('option');
@@ -1611,35 +1537,23 @@ function csvRiviOsiksi(rivi) {
         function paivitaWilmaRyhmat() {
             const ope = document.getElementById('wilma-ope')?.value || '';
             const select = document.getElementById('wilma-ryhma');
-
             let tunnit = parsedTapahtumatCache || [];
-            if (ope) {
-                tunnit = tunnit.filter(t => t.ope === ope);
-            }
-
-            const ryhmat = [...new Set(tunnit.map(t => t.ryhma).filter(Boolean))]
-                .sort((a, b) => a.localeCompare(b, 'fi'));
-
+            if (ope) tunnit = tunnit.filter(t => t.ope === ope);
+            const ryhmat = [...new Set(tunnit.map(t => t.ryhma).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fi'));
             const vanhaArvo = select.value;
             select.innerHTML = '';
-
             ryhmat.forEach(ryhma => {
                 const option = document.createElement('option');
                 option.value = ryhma;
                 option.textContent = ryhma;
                 select.appendChild(option);
             });
-
-            if (ryhmat.includes(vanhaArvo)) {
-                select.value = vanhaArvo;
-            }
+            if (ryhmat.includes(vanhaArvo)) select.value = vanhaArvo;
         }
 
         function paivitaMassamuutosOpettajat() {
             const select = document.getElementById('massamuutos-ope');
-            const opettajat = [...new Set((parsedTapahtumatCache || []).map(t => t.ope).filter(Boolean))]
-                .sort((a, b) => a.localeCompare(b, 'fi'));
-
+            const opettajat = [...new Set((parsedTapahtumatCache || []).map(t => t.ope).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fi'));
             select.innerHTML = '';
             opettajat.forEach(ope => {
                 const option = document.createElement('option');
@@ -1657,22 +1571,22 @@ function csvRiviOsiksi(rivi) {
 
         function seuraavaViikko() {
             const vanhaViikko = valittuViikko;
+            const kalenterivuosi = haeKalenterivuosiViikolle(valittuViikko, valittuLukuvuodenAloitusVuosi);
+            const maxWeeks = vuodenViikkojenMaara(kalenterivuosi);
             valittuViikko++;
-            if (valittuViikko > 52) valittuViikko = 1;
-
-            if (vanhaViikko < ASETUKSET.aloitusViikko && valittuViikko === ASETUKSET.aloitusViikko) {
-                valittuLukuvuodenAloitusVuosi++;
-            }
+            if (valittuViikko > maxWeeks) valittuViikko = 1;
+            if (vanhaViikko < ASETUKSET.aloitusViikko && valittuViikko === ASETUKSET.aloitusViikko) valittuLukuvuodenAloitusVuosi++;
         }
 
         function edellinenViikko() {
             const vanhaViikko = valittuViikko;
-            valittuViikko--;
-            if (valittuViikko < 1) valittuViikko = 52;
-
-            if (vanhaViikko === ASETUKSET.aloitusViikko) {
-                valittuLukuvuodenAloitusVuosi--;
+            if (valittuViikko === 1) {
+                const prevYear = haeKalenterivuosiViikolle(1, valittuLukuvuodenAloitusVuosi) - 1;
+                valittuViikko = vuodenViikkojenMaara(prevYear);
+            } else {
+                valittuViikko--;
             }
+            if (vanhaViikko === ASETUKSET.aloitusViikko) valittuLukuvuodenAloitusVuosi--;
         }
 
         function paataLukuvuosiValitulleViikolle(viikko) {
@@ -1684,12 +1598,10 @@ function csvRiviOsiksi(rivi) {
         function siirryViikolle() {
             const input = document.getElementById('viikko-input');
             const viikko = Number(input.value);
-
-            if (isNaN(viikko) || viikko < 1 || viikko > 52) {
-                alert('Anna viikkonumero väliltä 1–52.');
+            if (isNaN(viikko) || viikko < 1 || viikko > 53) {
+                alert('Anna viikkonumero väliltä 1–53.');
                 return;
             }
-
             valittuViikko = viikko;
             valittuLukuvuodenAloitusVuosi = paataLukuvuosiValitulleViikolle(viikko);
             suorita(valittuViikko, { skipOverridesFetch: true });
@@ -1721,35 +1633,23 @@ function csvRiviOsiksi(rivi) {
 
         function haeRyhmanTunnitViikolle(opettaja, ryhma, viikkoNumero) {
             const viikonPaivamaarat = haeViikonPaivamaarat(viikkoNumero);
-
             return (parsedTapahtumatCache || [])
                 .filter(t => t.ope === opettaja && t.ryhma === ryhma)
                 .map(tunti => {
                     const kiertoTyyppi = tunti.kierto;
                     const onkoVapaa = !kiertoTyyppi || isNaN(kiertoTyyppi) || kiertoTyyppi === 0;
-
                     let paikka = '';
                     const manuaalinenTila = haeManuaalinenTila(viikkoNumero, tunti);
-
-                    if (manuaalinenTila) {
-                        paikka = manuaalinenTila;
-                    } else if (tunti.poikkeus) {
-                        paikka = tunti.poikkeus;
-                    } else if (onkoVapaa) {
-                        paikka = 'Sopivat keskenään';
-                    } else if (kiertoTyyppi === 2 || kiertoTyyppi === 3 || kiertoTyyppi === 4) {
-                        paikka = haeOpettajanViikonTila(tunti.ope, kiertoTyyppi, viikkoNumero) || '—';
-                    } else {
+                    if (manuaalinenTila) paikka = manuaalinenTila;
+                    else if (tunti.poikkeus) paikka = tunti.poikkeus;
+                    else if (onkoVapaa) paikka = 'Sopivat keskenään';
+                    else if (kiertoTyyppi === 2 || kiertoTyyppi === 3 || kiertoTyyppi === 4) paikka = haeOpettajanViikonTila(tunti.ope, kiertoTyyppi, viikkoNumero) || '—';
+                    else {
                         const tilat = tilatKierroksittain[kiertoTyyppi] || ['—'];
                         const indeksi = Math.max(0, haeOpettajaIndeksi(tunti.ope)) % tilat.length;
                         paikka = tilat[indeksi] || '—';
                     }
-
-                    return {
-                        ...tunti,
-                        paikka,
-                        pvm: viikonPaivamaarat[tunti.paiva]?.date || null
-                    };
+                    return { ...tunti, paikka, pvm: viikonPaivamaarat[tunti.paiva]?.date || null };
                 })
                 .sort((a, b) => {
                     if (a.pvm && b.pvm) {
@@ -1760,37 +1660,44 @@ function csvRiviOsiksi(rivi) {
                 });
         }
 
+        function haeRyhmanWilmaRivitViikolle(opettaja, ryhma, viikkoNumero) {
+            const viikonPaivamaarat = haeViikonPaivamaarat(viikkoNumero);
+            const kaikki = haeRyhmanTunnitViikolle(opettaja, ryhma, viikkoNumero);
+            const paivaJarjestys = ['Maanantai', 'Tiistai', 'Keskiviikko', 'Torstai', 'Perjantai'];
+            const rivit = [];
+            paivaJarjestys.forEach(paiva => {
+                const pvm = viikonPaivamaarat[paiva]?.date;
+                const paivanTunnit = kaikki.filter(t => t.paiva === paiva);
+                if (!pvm) return;
+                const poissaolo = haePoissaoloTiedot(pvm, valittuLukuvuodenAloitusVuosi);
+                if (poissaolo.onPoissa && paivanTunnit.length > 0) {
+                    rivit.push({ tyyppi: 'poissaolo', paiva, pvm, nimi: poissaolo.nimi });
+                    return;
+                }
+                paivanTunnit.forEach(tunti => rivit.push({ tyyppi: 'tunti', ...tunti }));
+            });
+            return rivit;
+        }
+
         function haeOpettajanTunnitViikolleMassamuutokseen(opettaja, viikkoNumero) {
             const viikonPaivamaarat = haeViikonPaivamaarat(viikkoNumero);
-
             return (parsedTapahtumatCache || [])
                 .filter(t => t.ope === opettaja)
                 .map(tunti => {
                     const kiertoTyyppi = tunti.kierto;
                     const onkoVapaa = !kiertoTyyppi || isNaN(kiertoTyyppi) || kiertoTyyppi === 0;
-
                     let paikka = '';
                     const manuaalinenTila = haeManuaalinenTila(viikkoNumero, tunti);
-
-                    if (manuaalinenTila) {
-                        paikka = manuaalinenTila;
-                    } else if (tunti.poikkeus) {
-                        paikka = tunti.poikkeus;
-                    } else if (onkoVapaa) {
-                        paikka = 'Sopivat keskenään';
-                    } else if (kiertoTyyppi === 2 || kiertoTyyppi === 3 || kiertoTyyppi === 4) {
-                        paikka = haeOpettajanViikonTila(tunti.ope, kiertoTyyppi, viikkoNumero) || '—';
-                    } else {
+                    if (manuaalinenTila) paikka = manuaalinenTila;
+                    else if (tunti.poikkeus) paikka = tunti.poikkeus;
+                    else if (onkoVapaa) paikka = 'Sopivat keskenään';
+                    else if (kiertoTyyppi === 2 || kiertoTyyppi === 3 || kiertoTyyppi === 4) paikka = haeOpettajanViikonTila(tunti.ope, kiertoTyyppi, viikkoNumero) || '—';
+                    else {
                         const tilat = tilatKierroksittain[kiertoTyyppi] || ['—'];
                         const indeksi = Math.max(0, haeOpettajaIndeksi(tunti.ope)) % tilat.length;
                         paikka = tilat[indeksi] || '—';
                     }
-
-                    return {
-                        ...tunti,
-                        paikka,
-                        pvm: viikonPaivamaarat[tunti.paiva]?.date || null
-                    };
+                    return { ...tunti, paikka, pvm: viikonPaivamaarat[tunti.paiva]?.date || null };
                 })
                 .sort((a, b) => {
                     if (a.pvm && b.pvm) {
@@ -1801,246 +1708,136 @@ function csvRiviOsiksi(rivi) {
                 });
         }
 
-      async function muodostaWilmaViesti() {
-    const opettaja = document.getElementById('wilma-ope').value;
-    const ryhma = document.getElementById('wilma-ryhma').value;
-    const alkuviikko = Number(document.getElementById('wilma-alkuviikko').value);
-    const viikkomaarat = Number(document.getElementById('wilma-viikkomaarat').value);
+        async function muodostaWilmaViesti() {
+            const opettaja = document.getElementById('wilma-ope').value;
+            const ryhma = document.getElementById('wilma-ryhma').value;
+            const alkuviikko = Number(document.getElementById('wilma-alkuviikko').value);
+            const viikkomaarat = Number(document.getElementById('wilma-viikkomaarat').value);
+            if (!opettaja) return alert('Valitse opettaja.');
+            if (!ryhma) return alert('Valitse ryhmä.');
+            if (isNaN(alkuviikko) || alkuviikko < 1 || alkuviikko > 53) return alert('Anna alkuviikko väliltä 1–53.');
+            if (isNaN(viikkomaarat) || viikkomaarat < 1 || viikkomaarat > 30) return alert('Anna viikkomäärä väliltä 1–30.');
 
-    if (!opettaja) {
-        alert('Valitse opettaja.');
-        return;
-    }
+            const { Document, Packer, Paragraph, Table, TableRow, TableCell, WidthType, TextRun, HeadingLevel, BorderStyle } = window.docx;
 
-    if (!ryhma) {
-        alert('Valitse ryhmä.');
-        return;
-    }
-
-    if (isNaN(alkuviikko) || alkuviikko < 1 || alkuviikko > 52) {
-        alert('Anna alkuviikko väliltä 1–52.');
-        return;
-    }
-
-    if (isNaN(viikkomaarat) || viikkomaarat < 1 || viikkomaarat > 30) {
-        alert('Anna viikkomäärä väliltä 1–30.');
-        return;
-    }
-
-    const {
-        Document,
-        Packer,
-        Paragraph,
-        Table,
-        TableRow,
-        TableCell,
-        WidthType,
-        TextRun,
-        HeadingLevel,
-        BorderStyle
-    } = window.docx;
-
-    function teeOtsikkoSolu(teksti, widthPercent) {
-        return new TableCell({
-            width: {
-                size: widthPercent,
-                type: WidthType.PERCENTAGE
-            },
-            shading: {
-            fill: 'DCE6F1'
-            },    
-            children: [
-                new Paragraph({
-                    children: [
-                        new TextRun({
-                            text: teksti,
-                            bold: true
-                        })
-                    ]
-                })
-            ]
-        });
-    }
-
-    function teeTekstiSolu(teksti, widthPercent, bold = false, fillColor = null) {
-    return new TableCell({
-        width: {
-            size: widthPercent,
-            type: WidthType.PERCENTAGE
-        },
-        margins: {
-            top: 80,
-            bottom: 80,
-            left: 120,
-            right: 80
-        },
-        ...(fillColor ? {
-            shading: {
-                fill: fillColor
+            function teeOtsikkoSolu(teksti, widthPercent) {
+                return new TableCell({
+                    width: { size: widthPercent, type: WidthType.PERCENTAGE },
+                    shading: { fill: 'DCE6F1' },
+                    margins: { top: 80, bottom: 80, left: 120, right: 80 },
+                    children: [new Paragraph({ children: [new TextRun({ text: teksti, bold: true })] })]
+                });
             }
-        } : {}),
-        children: [
-            new Paragraph({
-                spacing: {
-                    before: 20,
-                    after: 20
-                },
-                children: [
-                    new TextRun({
-                        text: teksti || '',
-                        bold
-                    })
-                ]
-            })
-        ]
-    });
-}
 
-    function teeMoniriviSolu(rivit, widthPercent, fillColor = null) {
-    return new TableCell({
-        width: {
-            size: widthPercent,
-            type: WidthType.PERCENTAGE
-        },
-        margins: {
-            top: 80,
-            bottom: 80,
-            left: 120,
-            right: 80
-        },
-        ...(fillColor ? {
-            shading: {
-                fill: fillColor
+            function teeTekstiSolu(teksti, widthPercent, bold = false, fillColor = null) {
+                return new TableCell({
+                    width: { size: widthPercent, type: WidthType.PERCENTAGE },
+                    margins: { top: 80, bottom: 80, left: 120, right: 80 },
+                    ...(fillColor ? { shading: { fill: fillColor } } : {}),
+                    children: [new Paragraph({ spacing: { before: 20, after: 20 }, children: [new TextRun({ text: teksti || '', bold })] })]
+                });
             }
-        } : {}),
-        children: rivit.map(rivi =>
-            new Paragraph({
-                spacing: {
-                    before: 20,
-                    after: 20
-                },
-                children: [
-                    new TextRun({
-                        text: rivi.teksti || '',
-                        bold: !!rivi.bold,
-                        italics: !!rivi.italics
-                    })
-                ]
-            })
-        )
-    });
-}
 
-    let viikko = alkuviikko;
-    let loppuviikko = alkuviikko + viikkomaarat - 1;
-    while (loppuviikko > 52) loppuviikko -= 52;
+            function teeMoniriviSolu(rivit, widthPercent, fillColor = null) {
+                return new TableCell({
+                    width: { size: widthPercent, type: WidthType.PERCENTAGE },
+                    margins: { top: 80, bottom: 80, left: 120, right: 80 },
+                    ...(fillColor ? { shading: { fill: fillColor } } : {}),
+                    children: rivit.map(rivi => new Paragraph({
+                        spacing: { before: 20, after: 20 },
+                        children: [new TextRun({ text: rivi.teksti || '', bold: !!rivi.bold, italics: !!rivi.italics })]
+                    }))
+                });
+            }
 
-    const rows = [];
+            let viikko = alkuviikko;
+            let loppuviikko = alkuviikko;
+            for (let i = 1; i < viikkomaarat; i++) {
+                const kalenterivuosi = haeKalenterivuosiViikolle(loppuviikko, valittuLukuvuodenAloitusVuosi);
+                const maxWeeks = vuodenViikkojenMaara(kalenterivuosi);
+                loppuviikko++;
+                if (loppuviikko > maxWeeks) loppuviikko = 1;
+            }
 
-    rows.push(
-        new TableRow({
-            tableHeader: true,
-            children: [
+            const rows = [];
+            rows.push(new TableRow({ tableHeader: true, children: [
                 teeOtsikkoSolu('Vko', 8),
                 teeOtsikkoSolu('Päivä / aika', 22),
                 teeOtsikkoSolu('Liikuntatunnin aihe/paikka', 26),
                 teeOtsikkoSolu('Kokoontuminen', 22),
                 teeOtsikkoSolu('Muuta huomioitavaa', 22)
-            ]
-        })
-    );
+            ] }));
 
-    for (let i = 0; i < viikkomaarat; i++) {
-        const tunnit = haeRyhmanTunnitViikolle(opettaja, ryhma, viikko);
-
-        tunnit.forEach(tunti => {
-            const pvmTeksti = tunti.pvm ? muodostaPvmJaPaiva(tunti.pvm) : tunti.paiva;
-            const aikaTeksti = `klo ${tunti.alku}–${tunti.loppu}`;
-
-            const aihePaikkaRivit = [
-                { teksti: tunti.paikka || '' }
-            ];
-
-            if (onkoYksoistunti(tunti)) {
-                aihePaikkaRivit.push({
-                    teksti: 'Yksöistunti',
-                    italics: true
+            for (let i = 0; i < viikkomaarat; i++) {
+                const tunnit = haeRyhmanWilmaRivitViikolle(opettaja, ryhma, viikko);
+                tunnit.forEach(tunti => {
+                    if (tunti.tyyppi === 'poissaolo') {
+                        const pvmTeksti = tunti.pvm ? muodostaPvmJaPaiva(tunti.pvm) : tunti.paiva;
+                        rows.push(new TableRow({ children: [
+                            teeTekstiSolu(String(viikko), 8, false, 'F3F4F6'),
+                            teeMoniriviSolu([{ teksti: pvmTeksti }], 22, 'F3F4F6'),
+                            teeMoniriviSolu([{ teksti: tunti.nimi, bold: true }], 26, 'F3F4F6'),
+                            teeTekstiSolu('', 22, true, 'F3F4F6'),
+                            teeTekstiSolu('', 22, false, 'F3F4F6')
+                        ] }));
+                        return;
+                    }
+                    const pvmTeksti = tunti.pvm ? muodostaPvmJaPaiva(tunti.pvm) : tunti.paiva;
+                    const aikaTeksti = `klo ${tunti.alku}–${tunti.loppu}`;
+                    const aihePaikkaRivit = [{ teksti: tunti.paikka || '' }];
+                    const onYksoinen = onkoYksoistunti(tunti);
+                    if (onYksoinen) aihePaikkaRivit.push({ teksti: 'Yksöistunti', italics: true });
+                    const vakioKokoontuminen = haeVakioKokoontuminen(tunti.paikka);
+                    const rivinVari = onYksoinen ? 'EAF7EE' : 'EAF2FF';
+                    rows.push(new TableRow({ children: [
+                        teeTekstiSolu(String(viikko), 8, false, rivinVari),
+                        teeMoniriviSolu([{ teksti: pvmTeksti }, { teksti: aikaTeksti }], 22, rivinVari),
+                        teeMoniriviSolu(aihePaikkaRivit, 26, rivinVari),
+                        teeTekstiSolu(vakioKokoontuminen, 22, true, rivinVari),
+                        teeTekstiSolu('', 22, false, rivinVari)
+                    ] }));
                 });
+                const kalenterivuosi = haeKalenterivuosiViikolle(viikko, valittuLukuvuodenAloitusVuosi);
+                const maxWeeks = vuodenViikkojenMaara(kalenterivuosi);
+                viikko++;
+                if (viikko > maxWeeks) viikko = 1;
             }
 
-            const vakioKokoontuminen = haeVakioKokoontuminen(tunti.paikka);
-const onYksoinen = onkoYksoistunti(tunti);
-const rivinVari = onYksoinen ? 'EAF7EE' : 'EAF2FF';
-
-rows.push(
-    new TableRow({
-        children: [
-            teeTekstiSolu(String(viikko), 8, false, rivinVari),
-            teeMoniriviSolu([
-                { teksti: pvmTeksti },
-                { teksti: aikaTeksti }
-            ], 22, rivinVari),
-            teeMoniriviSolu(aihePaikkaRivit, 26, rivinVari),
-            teeTekstiSolu(vakioKokoontuminen, 22, true, rivinVari),
-            teeTekstiSolu('', 22, false, rivinVari)
-        ]
-    })
-);
-        });
-
-        viikko++;
-        if (viikko > 52) viikko = 1;
-    }
-
-    const doc = new Document({
-        sections: [
-            {
-                children: [
-                    new Paragraph({
-                        text: `Liikuntatiedot ryhmälle ${ryhma}, opettaja ${opettaja}`,
-                        heading: HeadingLevel.HEADING_1
-                    }),
-                    new Paragraph({
-                        text: `Viikot ${alkuviikko}–${loppuviikko}`
-                    }),
+            const doc = new Document({
+                sections: [{ children: [
+                    new Paragraph({ text: `Liikuntatiedot ryhmälle ${ryhma}, opettaja ${opettaja}`, heading: HeadingLevel.HEADING_1 }),
+                    new Paragraph({ text: `Viikot ${alkuviikko}–${loppuviikko}` }),
                     new Paragraph({ text: '' }),
                     new Table({
-                        width: {
-                            size: 100,
-                            type: WidthType.PERCENTAGE
-                        },
+                        width: { size: 100, type: WidthType.PERCENTAGE },
                         borders: {
-                            top: { style: BorderStyle.SINGLE, size: 1, color: "999999" },
-                            bottom: { style: BorderStyle.SINGLE, size: 1, color: "999999" },
-                            left: { style: BorderStyle.SINGLE, size: 1, color: "999999" },
-                            right: { style: BorderStyle.SINGLE, size: 1, color: "999999" },
-                            insideHorizontal: { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" },
-                            insideVertical: { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" }
+                            top: { style: BorderStyle.SINGLE, size: 1, color: '999999' },
+                            bottom: { style: BorderStyle.SINGLE, size: 1, color: '999999' },
+                            left: { style: BorderStyle.SINGLE, size: 1, color: '999999' },
+                            right: { style: BorderStyle.SINGLE, size: 1, color: '999999' },
+                            insideHorizontal: { style: BorderStyle.SINGLE, size: 1, color: 'CCCCCC' },
+                            insideVertical: { style: BorderStyle.SINGLE, size: 1, color: 'CCCCCC' }
                         },
                         rows
                     })
-                ]
-            }
-        ]
-    });
+                ] }]
+            });
 
-    const blob = await Packer.toBlob(doc);
-    const fileName = `wilma_${ryhma}_${opettaja}_vko_${alkuviikko}_${loppuviikko}.docx`;
-
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = fileName;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-}
+            const blob = await Packer.toBlob(doc);
+            const fileName = `wilma_${ryhma}_${opettaja}_vko_${alkuviikko}_${loppuviikko}.docx`;
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+        }
 
         function renderoiMassamuutosLista(tunnit) {
             const container = document.getElementById('massamuutos-lista');
             container.innerHTML = '';
-
             if (!tunnit.length) {
                 const div = document.createElement('div');
                 div.className = 'massamuutos-tyhja';
@@ -2048,23 +1845,14 @@ rows.push(
                 container.appendChild(div);
                 return;
             }
-
             const wrap = document.createElement('div');
             wrap.className = 'massamuutos-lista-wrap';
-
             tunnit.forEach((tunti, index) => {
                 const row = document.createElement('label');
                 row.className = 'massamuutos-rivi';
-
                 const onMuualla = String(tunti.paikka || '').toLowerCase().includes('muualla');
-
                 row.innerHTML = `
-                    <input type="checkbox" class="massamuutos-checkbox"
-                        data-index="${index}"
-                        data-paiva="${tunti.paiva}"
-                        data-alku="${tunti.alku}"
-                        data-loppu="${tunti.loppu}"
-                        data-ope="${tunti.ope}">
+                    <input type="checkbox" class="massamuutos-checkbox" data-index="${index}" data-paiva="${tunti.paiva}" data-alku="${tunti.alku}" data-loppu="${tunti.loppu}" data-ope="${tunti.ope}">
                     <div class="massamuutos-sisalto">
                         <div><strong>${tunti.pvm ? muodostaPvmJaPaiva(tunti.pvm) : tunti.paiva}</strong> klo ${tunti.alku}–${tunti.loppu}</div>
                         <div>${tunti.ryhma}</div>
@@ -2072,26 +1860,15 @@ rows.push(
                         <div>${onMuualla ? 'Muualla-tunti' : ''}</div>
                     </div>
                 `;
-
                 if (onMuualla) row.dataset.muualla = 'true';
                 wrap.appendChild(row);
             });
-
             container.appendChild(wrap);
         }
 
-        function haeMassamuutosCheckboxit() {
-            return [...document.querySelectorAll('.massamuutos-checkbox')];
-        }
-
-        function valitseKaikkiMassamuutoksessa() {
-            haeMassamuutosCheckboxit().forEach(cb => cb.checked = true);
-        }
-
-        function poistaKaikkiValinnatMassamuutoksessa() {
-            haeMassamuutosCheckboxit().forEach(cb => cb.checked = false);
-        }
-
+        function haeMassamuutosCheckboxit() { return [...document.querySelectorAll('.massamuutos-checkbox')]; }
+        function valitseKaikkiMassamuutoksessa() { haeMassamuutosCheckboxit().forEach(cb => cb.checked = true); }
+        function poistaKaikkiValinnatMassamuutoksessa() { haeMassamuutosCheckboxit().forEach(cb => cb.checked = false); }
         function valitseVainMuuallaMassamuutoksessa() {
             const rivit = [...document.querySelectorAll('.massamuutos-rivi')];
             rivit.forEach(rivi => {
@@ -2105,27 +1882,14 @@ rows.push(
             const opettaja = document.getElementById('massamuutos-ope').value;
             const kaikkiTunnit = haeOpettajanTunnitViikolleMassamuutokseen(opettaja, viikkoNumero);
             const checkboxit = haeMassamuutosCheckboxit();
-
-            return checkboxit
-                .filter(cb => cb.checked)
-                .map(cb => kaikkiTunnit[Number(cb.dataset.index)])
-                .filter(Boolean);
+            return checkboxit.filter(cb => cb.checked).map(cb => kaikkiTunnit[Number(cb.dataset.index)]).filter(Boolean);
         }
 
         async function haeMassamuutosTunnitJaRenderoi() {
             const opettaja = document.getElementById('massamuutos-ope').value;
             const viikkoNumero = Number(document.getElementById('massamuutos-viikko').value);
-
-            if (!opettaja) {
-                alert('Valitse opettaja.');
-                return;
-            }
-
-            if (isNaN(viikkoNumero) || viikkoNumero < 1 || viikkoNumero > 52) {
-                alert('Anna viikkonumero väliltä 1–52.');
-                return;
-            }
-
+            if (!opettaja) return alert('Valitse opettaja.');
+            if (isNaN(viikkoNumero) || viikkoNumero < 1 || viikkoNumero > 53) return alert('Anna viikkonumero väliltä 1–53.');
             const tunnit = haeOpettajanTunnitViikolleMassamuutokseen(opettaja, viikkoNumero);
             renderoiMassamuutosLista(tunnit);
         }
@@ -2134,80 +1898,26 @@ rows.push(
             const uusiPaikka = document.getElementById('massamuutos-uusi-paikka').value.trim();
             const viikkoNumero = Number(document.getElementById('massamuutos-viikko').value);
             const valitut = haeValitutMassamuutosTunnit();
-
-            if (!uusiPaikka) {
-                alert('Kirjoita uusi paikka.');
-                return;
-            }
-
-            if (!valitut.length) {
-                alert('Valitse vähintään yksi tunti.');
-                return;
-            }
-
-            const yhteenveto = valitut
-                .slice(0, 8)
-                .map(t => `${t.pvm ? muodostaPvmJaPaiva(t.pvm) : t.paiva} klo ${t.alku}–${t.loppu}`)
-                .join('\n');
-
-            const ok = confirm(
-                `Muutetaan ${valitut.length} tuntia paikaksi "${uusiPaikka}".\n\n${yhteenveto}${valitut.length > 8 ? '\n...' : ''}`
-            );
-
+            if (!uusiPaikka) return alert('Kirjoita uusi paikka.');
+            if (!valitut.length) return alert('Valitse vähintään yksi tunti.');
+            const yhteenveto = valitut.slice(0, 8).map(t => `${t.pvm ? muodostaPvmJaPaiva(t.pvm) : t.paiva} klo ${t.alku}–${t.loppu}`).join('\n');
+            const ok = confirm(`Muutetaan ${valitut.length} tuntia paikaksi "${uusiPaikka}".\n\n${yhteenveto}${valitut.length > 8 ? '\n...' : ''}`);
             if (!ok) return;
-
-            const payload = {
-                action: 'saveMultipleOverrides',
-                items: valitut.map(tunti => ({
-                    viikko: viikkoNumero,
-                    paiva: tunti.paiva,
-                    alku: tunti.alku,
-                    loppu: tunti.loppu,
-                    ope: tunti.ope,
-                    korvaava_tila: uusiPaikka
-                }))
-            };
-
+            const payload = { action: 'saveMultipleOverrides', items: valitut.map(tunti => ({ viikko: viikkoNumero, paiva: tunti.paiva, alku: tunti.alku, loppu: tunti.loppu, ope: tunti.ope, korvaava_tila: uusiPaikka })) };
             const button = document.getElementById('tallenna-massamuutos');
             const originalText = button.textContent;
-
             try {
                 button.disabled = true;
                 button.textContent = 'Tallennetaan...';
-
-                const response = await fetch(appsScriptUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!response.ok) {
-                    throw new Error(`Massatallennus epäonnistui. HTTP ${response.status}`);
-                }
-
+                const response = await fetch(appsScriptUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
+                if (!response.ok) throw new Error(`Massatallennus epäonnistui. HTTP ${response.status}`);
                 const rawText = await response.text();
                 let data;
-
-                try {
-                    data = JSON.parse(rawText);
-                } catch (err) {
-                    throw new Error('Massatallennus ei palauttanut JSONia. Vastaus oli: ' + rawText.slice(0, 200));
-                }
-
-                if (!data.ok) {
-                    throw new Error(data.error || 'Massatallennus epäonnistui');
-                }
-
-                payload.items.forEach(item => {
-                    paivitaOverrideCacheTallennuksenJalkeen(item);
-                });
-
+                try { data = JSON.parse(rawText); } catch (err) { throw new Error('Massatallennus ei palauttanut JSONia. Vastaus oli: ' + rawText.slice(0, 200)); }
+                if (!data.ok) throw new Error(data.error || 'Massatallennus epäonnistui');
+                payload.items.forEach(item => paivitaOverrideCacheTallennuksenJalkeen(item));
                 await haeMassamuutosTunnitJaRenderoi();
-
-                if (viikkoNumero === valittuViikko) {
-                    await renderoiNykyinenViikkoNopeasti();
-                }
-
+                if (viikkoNumero === valittuViikko) await renderoiNykyinenViikkoNopeasti();
                 alert(`Tallennettiin ${payload.items.length} tuntia.`);
             } finally {
                 button.disabled = false;
@@ -2218,110 +1928,47 @@ rows.push(
         let resizeTimer = null;
         function debounceRender() {
             clearTimeout(resizeTimer);
-            resizeTimer = setTimeout(() => {
-                renderoiNykyinenViikkoNopeasti();
-            }, 120);
+            resizeTimer = setTimeout(() => { renderoiNykyinenViikkoNopeasti(); }, 120);
         }
 
         window.onload = () => {
             asetaNykyinenViikkoJaLukuvuosi();
             paivitaOpeSuodatin();
-
-            document.getElementById('edellinen-viikko').addEventListener('click', () => {
-                edellinenViikko();
-                suorita(valittuViikko, { skipOverridesFetch: true });
-            });
-
-            document.getElementById('seuraava-viikko').addEventListener('click', () => {
-                seuraavaViikko();
-                suorita(valittuViikko, { skipOverridesFetch: true });
-            });
-
-            document.getElementById('nykyinen-viikko').addEventListener('click', () => {
-                asetaNykyinenViikkoJaLukuvuosi();
-                suorita(valittuViikko, { skipOverridesFetch: true });
-            });
-
+            document.getElementById('edellinen-viikko').addEventListener('click', () => { edellinenViikko(); suorita(valittuViikko, { skipOverridesFetch: true }); });
+            document.getElementById('seuraava-viikko').addEventListener('click', () => { seuraavaViikko(); suorita(valittuViikko, { skipOverridesFetch: true }); });
+            document.getElementById('nykyinen-viikko').addEventListener('click', () => { asetaNykyinenViikkoJaLukuvuosi(); suorita(valittuViikko, { skipOverridesFetch: true }); });
             document.getElementById('siirry-viikolle').addEventListener('click', siirryViikolle);
-            document.getElementById('viikko-input').addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') siirryViikolle();
-            });
-
-            document.getElementById('ope-suodatin').addEventListener('change', (e) => {
-                valittuOpettaja = e.target.value;
-                suorita(valittuViikko, { skipOverridesFetch: true });
-            });
-
-            document.getElementById('modal-tallenna').addEventListener('click', async () => {
-                try {
-                    await tallennaTilaMuutos();
-                } catch (err) {
-                    alert(err.message);
-                }
-            });
-
-            document.getElementById('modal-palauta').addEventListener('click', async () => {
-                try {
-                    await palautaAutomaattiseksi();
-                } catch (err) {
-                    alert(err.message);
-                }
-            });
-
+            document.getElementById('viikko-input').addEventListener('keydown', e => { if (e.key === 'Enter') siirryViikolle(); });
+            document.getElementById('ope-suodatin').addEventListener('change', e => { valittuOpettaja = e.target.value; suorita(valittuViikko, { skipOverridesFetch: true }); });
+            document.getElementById('modal-tallenna').addEventListener('click', async () => { try { await tallennaTilaMuutos(); } catch (err) { alert(err.message); } });
+            document.getElementById('modal-palauta').addEventListener('click', async () => { try { await palautaAutomaattiseksi(); } catch (err) { alert(err.message); } });
             document.getElementById('modal-peruuta').addEventListener('click', suljeTilaModal);
-
-            document.getElementById('tila-modal-backdrop').addEventListener('click', (e) => {
-                if (e.target.id === 'tila-modal-backdrop') suljeTilaModal();
-            });
-
+            document.getElementById('tila-modal-backdrop').addEventListener('click', e => { if (e.target.id === 'tila-modal-backdrop') suljeTilaModal(); });
             document.getElementById('avaa-wilma').addEventListener('click', avaaWilmaNakyma);
             document.getElementById('takaisin-kalenteriin').addEventListener('click', suljeWilmaNakyma);
-            document.getElementById('muodosta-wilma').addEventListener('click', async () => {
-                try {
-                    await muodostaWilmaViesti();
-                } catch (err) {
-                    alert(err.message);
-                }
-            });
-
-            document.getElementById('wilma-ope').addEventListener('change', () => {
-                paivitaWilmaRyhmat();
-            });
-
+            document.getElementById('muodosta-wilma').addEventListener('click', async () => { try { await muodostaWilmaViesti(); } catch (err) { alert(err.message); } });
+            document.getElementById('wilma-ope').addEventListener('change', () => { paivitaWilmaRyhmat(); });
             document.getElementById('avaa-massamuutos').addEventListener('click', avaaMassamuutosNakyma);
             document.getElementById('takaisin-massamuutoksesta').addEventListener('click', suljeMassamuutosNakyma);
             document.getElementById('hae-massamuutos-tunnit').addEventListener('click', haeMassamuutosTunnitJaRenderoi);
             document.getElementById('massamuutos-valitse-kaikki').addEventListener('click', valitseKaikkiMassamuutoksessa);
             document.getElementById('massamuutos-poista-kaikki').addEventListener('click', poistaKaikkiValinnatMassamuutoksessa);
             document.getElementById('massamuutos-valitse-muualla').addEventListener('click', valitseVainMuuallaMassamuutoksessa);
-            document.getElementById('tallenna-massamuutos').addEventListener('click', async () => {
-                try {
-                    await tallennaMassamuutos();
-                } catch (err) {
-                    alert(err.message);
-                }
-            });
-
+            document.getElementById('tallenna-massamuutos').addEventListener('click', async () => { try { await tallennaMassamuutos(); } catch (err) { alert(err.message); } });
             window.addEventListener('orientationchange', debounceRender);
-
             (async () => {
                 await haeTilamuutokset();
-
                 if (!csvCache) {
                     const response = await fetch(sheetUrl + '&t=' + Date.now());
                     csvCache = await response.text();
                 }
-
                 if (!parsedTapahtumatCache) parsedTapahtumatCache = parsiCsvTapahtumiksi(csvCache);
                 if (!groupedBaseCache) groupedBaseCache = rakennaGroupedBaseCache(parsedTapahtumatCache);
-
                 paivitaWilmaOpettajat();
                 paivitaWilmaRyhmat();
                 paivitaMassamuutosOpettajat();
-
                 document.getElementById('wilma-alkuviikko').value = valittuViikko;
                 document.getElementById('massamuutos-viikko').value = valittuViikko;
-
                 await suorita(valittuViikko, { skipOverridesFetch: true });
             })();
         };
