@@ -2139,6 +2139,8 @@
                             if (!paikka1 || !paikka2) continue;
                             if (paikka1 === 'Sopivat keskenään' || paikka2 === 'Sopivat keskenään') continue;
                             if (paikka1 !== paikka2) continue;
+                            const merkityksellisetTilat = ['Yläsali', 'Alasali'];
+                            if (!merkityksellisetTilat.includes(paikka1)) continue;
                             const viikonPaivamaarat = haeViikonPaivamaarat(viikkoNumero);
                             const pvmTeksti = viikonPaivamaarat[paiva]?.date ? muodostaPvmJaPaiva(viikonPaivamaarat[paiva].date) : paiva;
                             ristiriidat.push({
