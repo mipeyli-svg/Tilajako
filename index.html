@@ -730,21 +730,21 @@
                 </div>
 
                 <div class="wilma-controls">
-    <label for="testaaja-kierto">Kierto:</label>
-    <select id="testaaja-kierto">
-        <option value="2">2-kierto</option>
-        <option value="3">3-kierto</option>
-        <option value="4">4-kierto</option>
-    </select>
+                    <label for="testaaja-kierto">Kierto:</label>
+                    <select id="testaaja-kierto">
+                        <option value="2">2-kierto</option>
+                        <option value="3">3-kierto</option>
+                        <option value="4">4-kierto</option>
+                    </select>
 
-    <label for="testi-alkuviikko">Alkuviikko:</label>
-    <input id="testi-alkuviikko" type="number" min="1" max="53">
+                    <label for="testi-alkuviikko">Alkuviikko:</label>
+                    <input id="testi-alkuviikko" type="number" min="1" max="53">
 
-    <label for="testi-loppuviikko">Loppuviikko:</label>
-    <input id="testi-loppuviikko" type="number" min="1" max="53">
+                    <label for="testi-loppuviikko">Loppuviikko:</label>
+                    <input id="testi-loppuviikko" type="number" min="1" max="53">
 
-    <button id="laske-paras-jako">Laske paras jako</button>
-</div>
+                    <button id="laske-paras-jako">Laske paras jako</button>
+                </div>
 
                 <div class="wilma-help">
                     Muuta opettajien aloituspaikkoja ja tarkista, syntyykö salikonflikteja. Ristiriidoiksi lasketaan vain Yläsali ja Alasali. Muualla sallitaan.
@@ -962,7 +962,7 @@
             return new Date(year, month - 1, day);
         }
 
-                function muodostaLyhytPvm(date) {
+        function muodostaLyhytPvm(date) {
             return `${date.getDate()}.${date.getMonth() + 1}.`;
         }
 
@@ -2136,170 +2136,155 @@
                 button.textContent = originalText;
             }
         }
-        
+
         function avaaKiertotestaajaNakyma() {
-    document.getElementById('calendar-screen').classList.add('hidden');
-    document.getElementById('kiertotestaaja-screen').classList.remove('hidden');
-    document.getElementById('testi-alkuviikko').value = valittuViikko;
-    document.getElementById('testi-loppuviikko').value = valittuViikko;
-    document.getElementById('kiertotestaaja-tulos').innerHTML = '<div class="testaaja-pieni">Valitse kierto ja viikkoväli, sitten paina "Laske paras jako".</div>';
-}
-        
+            document.getElementById('calendar-screen').classList.add('hidden');
+            document.getElementById('kiertotestaaja-screen').classList.remove('hidden');
+            document.getElementById('testi-alkuviikko').value = valittuViikko;
+            document.getElementById('testi-loppuviikko').value = valittuViikko;
+            document.getElementById('kiertotestaaja-tulos').innerHTML =
+                '<div class="testaaja-pieni">Valitse kierto ja viikkoväli, sitten paina "Laske paras jako".</div>';
+        }
 
         function suljeKiertotestaajaNakyma() {
             document.getElementById('kiertotestaaja-screen').classList.add('hidden');
             document.getElementById('calendar-screen').classList.remove('hidden');
         }
 
-        
-
         function osuvatkoPaallekkain(t1, t2) {
             return aikaMinuuteiksi(t1.alku) < aikaMinuuteiksi(t2.loppu) &&
                    aikaMinuuteiksi(t2.alku) < aikaMinuuteiksi(t1.loppu);
         }
-        
+
         function haeSeuraavaViikkoNumerona(viikko, lukuvuosi) {
-    const kalenterivuosi = haeKalenterivuosiViikolle(viikko, lukuvuosi);
-    const maxWeeks = vuodenViikkojenMaara(kalenterivuosi);
-    return viikko >= maxWeeks ? 1 : viikko + 1;
-}
-
-function muodostaTestiViikot(alkuviikko, loppuviikko) {
-    const viikot = [];
-    let v = alkuviikko;
-    let safety = 0;
-
-    while (true) {
-        viikot.push(v);
-        if (v === loppuviikko) break;
-        v = haeSeuraavaViikkoNumerona(v, valittuLukuvuodenAloitusVuosi);
-        safety++;
-        if (safety > 60) break;
-    }
-
-    return viikot;
-}
-
-
-
-function generoiKiertoEhdotukset(kierto, opettajat) {
-    const tilat = tilatKierroksittain[kierto] || [];
-    const tulokset = [];
-
-    function rek(indeksi, nykyinen) {
-        if (indeksi >= opettajat.length) {
-            tulokset.push({ ...nykyinen });
-            return;
+            const kalenterivuosi = haeKalenterivuosiViikolle(viikko, lukuvuosi);
+            const maxWeeks = vuodenViikkojenMaara(kalenterivuosi);
+            return viikko >= maxWeeks ? 1 : viikko + 1;
         }
 
-        const ope = opettajat[indeksi];
+        function muodostaTestiViikot(alkuviikko, loppuviikko) {
+            const viikot = [];
+            let v = alkuviikko;
+            let safety = 0;
 
-        tilat.forEach(tila => {
-            nykyinen[ope] = tila;
-            rek(indeksi + 1, nykyinen);
-        });
-    }
+            while (true) {
+                viikot.push(v);
+                if (v === loppuviikko) break;
+                v = haeSeuraavaViikkoNumerona(v, valittuLukuvuodenAloitusVuosi);
+                safety++;
+                if (safety > 60) break;
+            }
 
-    rek(0, {});
-    return tulokset;
-}
+            return viikot;
+        }
 
-function ratkaiseTilaEhdotuksestaViikolle(kierto, ehdotus, ope, viikkoNumero) {
-    const tilat = tilatKierroksittain[kierto] || [];
-    const lahto = ehdotus[ope];
+        function muodostaKiertoTestinOpettajaLista(kierto) {
+            const mukana = new Set(
+                (parsedTapahtumatCache || [])
+                    .filter(t => Number(t.kierto) === Number(kierto))
+                    .map(t => t.ope)
+                    .filter(Boolean)
+            );
 
-    if (!lahto || !tilat.length) return '—';
+            return ASETUKSET.opettajat.filter(ope => mukana.has(ope));
+        }
 
-    const lahtoIndeksi = tilat.indexOf(lahto);
-    if (lahtoIndeksi === -1) return '—';
+        function generoiKiertoEhdotukset(kierto, opettajat) {
+            const tilat = tilatKierroksittain[kierto] || [];
+            const tulokset = [];
 
-    const siirtyma = viikkoSiirtyma(viikkoNumero, kierto);
-    return tilat[(lahtoIndeksi + siirtyma) % tilat.length];
-}
+            function rek(indeksi, nykyinen) {
+                if (indeksi >= opettajat.length) {
+                    tulokset.push({ ...nykyinen });
+                    return;
+                }
 
-function haeTunninPaikkaOptimoinnissa(tunti, viikkoNumero, ehdotus) {
-    const kiertoTyyppi = Number(tunti.kierto);
-    const onkoVapaa = !kiertoTyyppi || isNaN(kiertoTyyppi) || kiertoTyyppi === 0;
+                const ope = opettajat[indeksi];
 
-    const manuaalinenTila = haeManuaalinenTila(viikkoNumero, tunti);
-    if (manuaalinenTila) return manuaalinenTila;
-    if (tunti.poikkeus) return tunti.poikkeus;
-    if (onkoVapaa) return 'Sopivat keskenään';
+                tilat.forEach(tila => {
+                    nykyinen[ope] = tila;
+                    rek(indeksi + 1, nykyinen);
+                });
+            }
 
-    if (kiertoTyyppi === 2 || kiertoTyyppi === 3 || kiertoTyyppi === 4) {
-        return ratkaiseTilaEhdotuksestaViikolle(kiertoTyyppi, ehdotus, tunti.ope, viikkoNumero) || '—';
-    }
+            rek(0, {});
+            return tulokset;
+        }
 
-    const tilat = tilatKierroksittain[kiertoTyyppi] || ['—'];
-    const indeksi = Math.max(0, haeOpettajaIndeksi(tunti.ope)) % tilat.length;
-    return tilat[indeksi] || '—';
-}
+        function laskeTestiviikkojenSiirtymat(testiviikot, kierto) {
+            const siirtymat = new Map();
 
-function muodostaKiertoTestinOpettajaLista(kierto) {
-    const mukana = new Set(
-        (parsedTapahtumatCache || [])
-            .filter(t => Number(t.kierto) === Number(kierto))
-            .map(t => t.ope)
-            .filter(Boolean)
-    );
+            testiviikot.forEach(viikkoNumero => {
+                siirtymat.set(viikkoNumero, viikkoSiirtyma(viikkoNumero, kierto));
+            });
 
-    return ASETUKSET.opettajat.filter(ope => mukana.has(ope));
-}
+            return siirtymat;
+        }
 
-function laskeTestiviikkojenSiirtymat(testiviikot, kierto) {
-    const siirtymat = new Map();
+        function rakennaKonfliktiData(kierto, testiviikot) {
+            const data = [];
+            const kaikki = parsedTapahtumatCache || [];
+            const siirtymat = laskeTestiviikkojenSiirtymat(testiviikot, kierto);
 
-    testiviikot.forEach(viikkoNumero => {
-        siirtymat.set(viikkoNumero, viikkoSiirtyma(viikkoNumero, kierto));
-    });
+            const kierronTunnitPaivittain = {};
+            viikonpaivat.forEach(paiva => {
+                kierronTunnitPaivittain[paiva] = kaikki.filter(t =>
+                    Number(t.kierto) === Number(kierto) && t.paiva === paiva
+                );
+            });
 
-    return siirtymat;
-}
+            testiviikot.forEach(viikkoNumero => {
+                const viikonPaivamaarat = haeViikonPaivamaarat(viikkoNumero);
+                const shift = siirtymat.get(viikkoNumero);
 
-function rakennaKonfliktiData(kierto, testiviikot) {
-    const data = [];
-    const kaikki = parsedTapahtumatCache || [];
-    const siirtymat = laskeTestiviikkojenSiirtymat(testiviikot, kierto);
+                viikonpaivat.forEach(paiva => {
+                    const paivanTunnit = kierronTunnitPaivittain[paiva];
 
-    const kierronTunnitPaivittain = {};
-    viikonpaivat.forEach(paiva => {
-        kierronTunnitPaivittain[paiva] = kaikki.filter(t =>
-            Number(t.kierto) === Number(kierto) && t.paiva === paiva
-        );
-    });
+                    for (let i = 0; i < paivanTunnit.length; i++) {
+                        for (let j = i + 1; j < paivanTunnit.length; j++) {
+                            const t1 = paivanTunnit[i];
+                            const t2 = paivanTunnit[j];
 
-    testiviikot.forEach(viikkoNumero => {
-        const viikonPaivamaarat = haeViikonPaivamaarat(viikkoNumero);
-        const shift = siirtymat.get(viikkoNumero);
+                            if (!osuvatkoPaallekkain(t1, t2)) continue;
 
-        viikonpaivat.forEach(paiva => {
-            const paivanTunnit = kierronTunnitPaivittain[paiva];
+                            const manuaalinen1 = haeManuaalinenTila(viikkoNumero, t1) || t1.poikkeus || '';
+                            const manuaalinen2 = haeManuaalinenTila(viikkoNumero, t2) || t2.poikkeus || '';
 
-            for (let i = 0; i < paivanTunnit.length; i++) {
-                for (let j = i + 1; j < paivanTunnit.length; j++) {
-                    const t1 = paivanTunnit[i];
-                    const t2 = paivanTunnit[j];
+                            if (manuaalinen1 || manuaalinen2) {
+                                const paikka1 = manuaalinen1 || '';
+                                const paikka2 = manuaalinen2 || '';
 
-                    if (!osuvatkoPaallekkain(t1, t2)) continue;
+                                if (
+                                    (paikka1 === 'Yläsali' || paikka1 === 'Alasali') &&
+                                    paikka1 === paikka2
+                                ) {
+                                    const pvm = viikonPaivamaarat[paiva]?.date || null;
+                                    data.push({
+                                        viikko: viikkoNumero,
+                                        paiva,
+                                        pvmTeksti: pvm ? muodostaPvmJaPaiva(pvm) : paiva,
+                                        shift,
+                                        tila: paikka1,
+                                        ope1: t1.ope,
+                                        ryhma1: t1.ryhma,
+                                        alku1: t1.alku,
+                                        loppu1: t1.loppu,
+                                        ope2: t2.ope,
+                                        ryhma2: t2.ryhma,
+                                        alku2: t2.alku,
+                                        loppu2: t2.loppu,
+                                        kiintea: true
+                                    });
+                                }
+                                continue;
+                            }
 
-                    const manuaalinen1 = haeManuaalinenTila(viikkoNumero, t1) || t1.poikkeus || '';
-                    const manuaalinen2 = haeManuaalinenTila(viikkoNumero, t2) || t2.poikkeus || '';
-
-                    if (manuaalinen1 || manuaalinen2) {
-                        const paikka1 = manuaalinen1 || '';
-                        const paikka2 = manuaalinen2 || '';
-
-                        if (
-                            (paikka1 === 'Yläsali' || paikka1 === 'Alasali') &&
-                            paikka1 === paikka2
-                        ) {
                             const pvm = viikonPaivamaarat[paiva]?.date || null;
                             data.push({
                                 viikko: viikkoNumero,
                                 paiva,
                                 pvmTeksti: pvm ? muodostaPvmJaPaiva(pvm) : paiva,
                                 shift,
-                                tila: paikka1,
                                 ope1: t1.ope,
                                 ryhma1: t1.ryhma,
                                 alku1: t1.alku,
@@ -2308,279 +2293,183 @@ function rakennaKonfliktiData(kierto, testiviikot) {
                                 ryhma2: t2.ryhma,
                                 alku2: t2.alku,
                                 loppu2: t2.loppu,
-                                kiintea: true
+                                kiintea: false
                             });
                         }
-                        continue;
                     }
+                });
+            });
 
-                    const pvm = viikonPaivamaarat[paiva]?.date || null;
-                    data.push({
-                        viikko: viikkoNumero,
-                        paiva,
-                        pvmTeksti: pvm ? muodostaPvmJaPaiva(pvm) : paiva,
-                        shift,
-                        ope1: t1.ope,
-                        ryhma1: t1.ryhma,
-                        alku1: t1.alku,
-                        loppu1: t1.loppu,
-                        ope2: t2.ope,
-                        ryhma2: t2.ryhma,
-                        alku2: t2.alku,
-                        loppu2: t2.loppu,
-                        kiintea: false
+            return data;
+        }
+
+        function arvioiKiertoEhdotusNopeasti(kierto, ehdotus, konfliktiData) {
+            const tilat = tilatKierroksittain[kierto] || [];
+            const ristiriidat = [];
+
+            for (const r of konfliktiData) {
+                if (r.kiintea) {
+                    ristiriidat.push({
+                        viikko: r.viikko,
+                        paiva: r.paiva,
+                        pvmTeksti: r.pvmTeksti,
+                        paikka: r.tila,
+                        ope1: r.ope1,
+                        ryhma1: r.ryhma1,
+                        alku1: r.alku1,
+                        loppu1: r.loppu1,
+                        ope2: r.ope2,
+                        ryhma2: r.ryhma2,
+                        alku2: r.alku2,
+                        loppu2: r.loppu2
+                    });
+                    continue;
+                }
+
+                const lahto1 = ehdotus[r.ope1];
+                const lahto2 = ehdotus[r.ope2];
+
+                if (!lahto1 || !lahto2) continue;
+
+                const i1 = tilat.indexOf(lahto1);
+                const i2 = tilat.indexOf(lahto2);
+                if (i1 === -1 || i2 === -1) continue;
+
+                const paikka1 = tilat[(i1 + r.shift) % tilat.length];
+                const paikka2 = tilat[(i2 + r.shift) % tilat.length];
+
+                if ((paikka1 === 'Yläsali' || paikka1 === 'Alasali') && paikka1 === paikka2) {
+                    ristiriidat.push({
+                        viikko: r.viikko,
+                        paiva: r.paiva,
+                        pvmTeksti: r.pvmTeksti,
+                        paikka: paikka1,
+                        ope1: r.ope1,
+                        ryhma1: r.ryhma1,
+                        alku1: r.alku1,
+                        loppu1: r.loppu1,
+                        ope2: r.ope2,
+                        ryhma2: r.ryhma2,
+                        alku2: r.alku2,
+                        loppu2: r.loppu2
                     });
                 }
             }
-        });
-    });
 
-    return data;
-}
-
-function arvioiKiertoEhdotusNopeasti(kierto, ehdotus, konfliktiData) {
-    const tilat = tilatKierroksittain[kierto] || [];
-    const ristiriidat = [];
-
-    for (const r of konfliktiData) {
-        if (r.kiintea) {
-            ristiriidat.push({
-                viikko: r.viikko,
-                paiva: r.paiva,
-                pvmTeksti: r.pvmTeksti,
-                paikka: r.tila,
-                ope1: r.ope1,
-                ryhma1: r.ryhma1,
-                alku1: r.alku1,
-                loppu1: r.loppu1,
-                ope2: r.ope2,
-                ryhma2: r.ryhma2,
-                alku2: r.alku2,
-                loppu2: r.loppu2
-            });
-            continue;
+            return {
+                konfliktit: ristiriidat.length,
+                kasinRakennettavat: ristiriidat.length,
+                ristiriidat,
+                pisteet: ristiriidat.length
+            };
         }
 
-        const lahto1 = ehdotus[r.ope1];
-        const lahto2 = ehdotus[r.ope2];
+        function naytaKiertotestaajanTulos(kierto, opettajat, arvioitu, ehdotus, testattujaVaihtoehtoja, alkuviikko, loppuviikko) {
+            const el = document.getElementById('kiertotestaaja-tulos');
 
-        if (!lahto1 || !lahto2) continue;
+            const ehdotusRivit = opettajat
+                .map(ope => `<div class="testaaja-rivi"><strong>${ope}</strong>: ${ehdotus[ope] || '—'}</div>`)
+                .join('');
 
-        const i1 = tilat.indexOf(lahto1);
-        const i2 = tilat.indexOf(lahto2);
-        if (i1 === -1 || i2 === -1) continue;
+            const ristiriitaHtml = arvioitu.ristiriidat.length
+                ? arvioitu.ristiriidat.map(r => `
+                    <div class="kiertoristiriita-rivi">
+                        <strong>Vko ${r.viikko}</strong> – ${r.pvmTeksti}<br>
+                        <strong>Paikka:</strong> ${r.paikka}<br>
+                        <strong>${r.ope1}</strong> (${r.ryhma1}) ${r.alku1}–${r.loppu1}<br>
+                        <strong>${r.ope2}</strong> (${r.ryhma2}) ${r.alku2}–${r.loppu2}
+                    </div>
+                `).join('')
+                : '<div class="testaaja-rivi">Ei käsin rakennettavia salikonflikteja.</div>';
 
-        const paikka1 = tilat[(i1 + r.shift) % tilat.length];
-        const paikka2 = tilat[(i2 + r.shift) % tilat.length];
+            const tulosLuokka = arvioitu.konfliktit === 0 ? 'kiertotulos-ok' : 'kiertotulos-virhe';
+            const tulosTeksti = arvioitu.konfliktit === 0
+                ? `Täydellinen jako löytyi viikoille ${alkuviikko}–${loppuviikko}.`
+                : `Paras löydetty jako viikoille ${alkuviikko}–${loppuviikko} sisältää vielä käsin ratkaistavia kohtia.`;
 
-        if ((paikka1 === 'Yläsali' || paikka1 === 'Alasali') && paikka1 === paikka2) {
-            ristiriidat.push({
-                viikko: r.viikko,
-                paiva: r.paiva,
-                pvmTeksti: r.pvmTeksti,
-                paikka: paikka1,
-                ope1: r.ope1,
-                ryhma1: r.ryhma1,
-                alku1: r.alku1,
-                loppu1: r.loppu1,
-                ope2: r.ope2,
-                ryhma2: r.ryhma2,
-                alku2: r.alku2,
-                loppu2: r.loppu2
-            });
+            el.innerHTML = `
+                <div class="${tulosLuokka}">${tulosTeksti}</div>
+
+                <div class="testaaja-kortti">
+                    <div class="testaaja-otsikko">Paras ehdotus (${kierto}-kierto)</div>
+                    ${ehdotusRivit}
+                </div>
+
+                <div class="testaaja-kortti">
+                    <div class="testaaja-rivi"><strong>Testattuja vaihtoehtoja:</strong> ${testattujaVaihtoehtoja}</div>
+                    <div class="testaaja-rivi"><strong>Salikonflikteja:</strong> ${arvioitu.konfliktit}</div>
+                    <div class="testaaja-rivi"><strong>Käsin rakennettavia kohtia:</strong> ${arvioitu.kasinRakennettavat}</div>
+                    <div class="testaaja-rivi testaaja-pieni">
+                        Optimointi kävi läpi oikeat viikot välillä ${alkuviikko}–${loppuviikko}. Vain Yläsali- ja Alasali-ristiriidat lasketaan.
+                    </div>
+                </div>
+
+                <div class="testaaja-kortti">
+                    <div class="testaaja-otsikko">Käsin ratkaistavat kohdat</div>
+                    ${ristiriitaHtml}
+                </div>
+            `;
         }
-    }
 
-    return {
-        konfliktit: ristiriidat.length,
-        kasinRakennettavat: ristiriidat.length,
-        ristiriidat,
-        pisteet: ristiriidat.length
-    };
-}
+        function laskeParasKiertoJako() {
+            const kierto = Number(document.getElementById('testaaja-kierto').value);
+            const alkuviikko = Number(document.getElementById('testi-alkuviikko').value);
+            const loppuviikko = Number(document.getElementById('testi-loppuviikko').value);
+            const tulosEl = document.getElementById('kiertotestaaja-tulos');
 
-function naytaKiertotestaajanTulos(kierto, opettajat, arvioitu, ehdotus, testattujaVaihtoehtoja, alkuviikko, loppuviikko) {
-    const el = document.getElementById('kiertotestaaja-tulos');
-
-    const ehdotusRivit = opettajat
-        .map(ope => `<div class="testaaja-rivi"><strong>${ope}</strong>: ${ehdotus[ope] || '—'}</div>`)
-        .join('');
-
-    const ristiriitaHtml = arvioitu.ristiriidat.length
-        ? arvioitu.ristiriidat.map(r => `
-            <div class="kiertoristiriita-rivi">
-                <strong>Vko ${r.viikko}</strong> – ${r.pvmTeksti}<br>
-                <strong>Paikka:</strong> ${r.paikka}<br>
-                <strong>${r.ope1}</strong> (${r.ryhma1}) ${r.alku1}–${r.loppu1}<br>
-                <strong>${r.ope2}</strong> (${r.ryhma2}) ${r.alku2}–${r.loppu2}
-            </div>
-        `).join('')
-        : '<div class="testaaja-rivi">Ei käsin rakennettavia salikonflikteja.</div>';
-
-    const tulosLuokka = arvioitu.konfliktit === 0 ? 'kiertotulos-ok' : 'kiertotulos-virhe';
-    const tulosTeksti = arvioitu.konfliktit === 0
-        ? `Täydellinen jako löytyi viikoille ${alkuviikko}–${loppuviikko}.`
-        : `Paras löydetty jako viikoille ${alkuviikko}–${loppuviikko} sisältää vielä käsin ratkaistavia kohtia.`;
-
-    el.innerHTML = `
-        <div class="${tulosLuokka}">${tulosTeksti}</div>
-
-        <div class="testaaja-kortti">
-            <div class="testaaja-otsikko">Paras ehdotus (${kierto}-kierto)</div>
-            ${ehdotusRivit}
-        </div>
-
-        <div class="testaaja-kortti">
-            <div class="testaaja-rivi"><strong>Testattuja vaihtoehtoja:</strong> ${testattujaVaihtoehtoja}</div>
-            <div class="testaaja-rivi"><strong>Salikonflikteja:</strong> ${arvioitu.konfliktit}</div>
-            <div class="testaaja-rivi"><strong>Käsin rakennettavia kohtia:</strong> ${arvioitu.kasinRakennettavat}</div>
-            <div class="testaaja-rivi testaaja-pieni">
-                Optimointi kävi läpi oikeat viikot välillä ${alkuviikko}–${loppuviikko}. Vain Yläsali- ja Alasali-ristiriidat lasketaan.
-            </div>
-        </div>
-
-        <div class="testaaja-kortti">
-            <div class="testaaja-otsikko">Käsin ratkaistavat kohdat</div>
-            ${ristiriitaHtml}
-        </div>
-    `;
-}
-
-function laskeParasKiertoJako() {
-    const kierto = Number(document.getElementById('testaaja-kierto').value);
-    const alkuviikko = Number(document.getElementById('testi-alkuviikko').value);
-    const loppuviikko = Number(document.getElementById('testi-loppuviikko').value);
-    const tulosEl = document.getElementById('kiertotestaaja-tulos');
-
-    if (isNaN(alkuviikko) || alkuviikko < 1 || alkuviikko > 53) {
-        tulosEl.innerHTML = '<div class="testaaja-virhe">Anna alkuviikko väliltä 1–53.</div>';
-        return;
-    }
-
-    if (isNaN(loppuviikko) || loppuviikko < 1 || loppuviikko > 53) {
-        tulosEl.innerHTML = '<div class="testaaja-virhe">Anna loppuviikko väliltä 1–53.</div>';
-        return;
-    }
-
-    const opettajat = muodostaKiertoTestinOpettajaLista(kierto);
-
-    if (!opettajat.length) {
-        tulosEl.innerHTML = '<div class="testaaja-virhe">Valitussa kierrossa ei löytynyt opettajia.</div>';
-        return;
-    }
-
-    tulosEl.innerHTML = '<div class="testaaja-pieni">Lasketaan paras jako...</div>';
-
-    setTimeout(() => {
-        const testiviikot = muodostaTestiViikot(alkuviikko, loppuviikko);
-        const konfliktiData = rakennaKonfliktiData(kierto, testiviikot);
-        const ehdotukset = generoiKiertoEhdotukset(kierto, opettajat);
-
-        let paras = null;
-        let parasArvio = null;
-
-        for (const ehdotus of ehdotukset) {
-            const arvio = arvioiKiertoEhdotusNopeasti(kierto, ehdotus, konfliktiData);
-
-            if (!parasArvio || arvio.pisteet < parasArvio.pisteet) {
-                paras = ehdotus;
-                parasArvio = arvio;
-                if (arvio.pisteet === 0) break;
+            if (isNaN(alkuviikko) || alkuviikko < 1 || alkuviikko > 53) {
+                tulosEl.innerHTML = '<div class="testaaja-virhe">Anna alkuviikko väliltä 1–53.</div>';
+                return;
             }
+
+            if (isNaN(loppuviikko) || loppuviikko < 1 || loppuviikko > 53) {
+                tulosEl.innerHTML = '<div class="testaaja-virhe">Anna loppuviikko väliltä 1–53.</div>';
+                return;
+            }
+
+            const opettajat = muodostaKiertoTestinOpettajaLista(kierto);
+
+            if (!opettajat.length) {
+                tulosEl.innerHTML = '<div class="testaaja-virhe">Valitussa kierrossa ei löytynyt opettajia.</div>';
+                return;
+            }
+
+            tulosEl.innerHTML = '<div class="testaaja-pieni">Lasketaan paras jako...</div>';
+
+            setTimeout(() => {
+                try {
+                    const testiviikot = muodostaTestiViikot(alkuviikko, loppuviikko);
+                    const konfliktiData = rakennaKonfliktiData(kierto, testiviikot);
+                    const ehdotukset = generoiKiertoEhdotukset(kierto, opettajat);
+
+                    let paras = null;
+                    let parasArvio = null;
+
+                    for (const ehdotus of ehdotukset) {
+                        const arvio = arvioiKiertoEhdotusNopeasti(kierto, ehdotus, konfliktiData);
+
+                        if (!parasArvio || arvio.pisteet < parasArvio.pisteet) {
+                            paras = ehdotus;
+                            parasArvio = arvio;
+                            if (arvio.pisteet === 0) break;
+                        }
+                    }
+
+                    naytaKiertotestaajanTulos(
+                        kierto,
+                        opettajat,
+                        parasArvio,
+                        paras,
+                        ehdotukset.length,
+                        alkuviikko,
+                        loppuviikko
+                    );
+                } catch (err) {
+                    tulosEl.innerHTML = `<div class="testaaja-virhe">Kiertotestaajan virhe: ${err.message}</div>`;
+                    console.error(err);
+                }
+            }, 30);
         }
-
-        naytaKiertotestaajanTulos(
-            kierto,
-            opettajat,
-            parasArvio,
-            paras,
-            ehdotukset.length,
-            alkuviikko,
-            loppuviikko
-        );
-    }, 30);
-}
-
-    function naytaKiertotestaajanTulos(kierto, opettajat, arvioitu, ehdotus, testattujaVaihtoehtoja, alkuviikko, loppuviikko) {
-    const el = document.getElementById('kiertotestaaja-tulos');
-
-    const ehdotusRivit = opettajat
-        .map(ope => `<div class="testaaja-rivi"><strong>${ope}</strong>: ${ehdotus[ope] || '—'}</div>`)
-        .join('');
-
-    const ristiriitaHtml = arvioitu.ristiriidat.length
-        ? arvioitu.ristiriidat.map(r => `
-            <div class="kiertoristiriita-rivi">
-                <strong>Vko ${r.viikko}</strong> – ${r.pvmTeksti}<br>
-                <strong>Paikka:</strong> ${r.paikka}<br>
-                <strong>${r.ope1}</strong> (${r.ryhma1}) ${r.alku1}–${r.loppu1}<br>
-                <strong>${r.ope2}</strong> (${r.ryhma2}) ${r.alku2}–${r.loppu2}
-            </div>
-        `).join('')
-        : '<div class="testaaja-rivi">Ei käsin rakennettavia salikonflikteja.</div>';
-
-    const tulosLuokka = arvioitu.konfliktit === 0 ? 'kiertotulos-ok' : 'kiertotulos-virhe';
-    const tulosTeksti = arvioitu.konfliktit === 0
-        ? `Täydellinen jako löytyi viikoille ${alkuviikko}–${loppuviikko}.`
-        : `Paras löydetty jako viikoille ${alkuviikko}–${loppuviikko} sisältää vielä käsin ratkaistavia kohtia.`;
-
-    el.innerHTML = `
-        <div class="${tulosLuokka}">${tulosTeksti}</div>
-
-        <div class="testaaja-kortti">
-            <div class="testaaja-otsikko">Paras ehdotus (${kierto}-kierto)</div>
-            ${ehdotusRivit}
-        </div>
-
-        <div class="testaaja-kortti">
-            <div class="testaaja-rivi"><strong>Testattuja vaihtoehtoja:</strong> ${testattujaVaihtoehtoja}</div>
-            <div class="testaaja-rivi"><strong>Salikonflikteja:</strong> ${arvioitu.konfliktit}</div>
-            <div class="testaaja-rivi"><strong>Käsin rakennettavia kohtia:</strong> ${arvioitu.kasinRakennettavat}</div>
-            <div class="testaaja-rivi testaaja-pieni">
-                Optimointi kävi läpi oikeat viikot välillä ${alkuviikko}–${loppuviikko}. Vain Yläsali- ja Alasali-ristiriidat lasketaan.
-            </div>
-        </div>
-
-        <div class="testaaja-kortti">
-            <div class="testaaja-otsikko">Käsin ratkaistavat kohdat</div>
-            ${ristiriitaHtml}
-        </div>
-    `;
-}
-    const opettajat = muodostaKiertoTestinOpettajaLista(kierto);
-
-    if (!opettajat.length) {
-        tulosEl.innerHTML = '<div class="testaaja-virhe">Valitussa kierrossa ei löytynyt opettajia.</div>';
-        return;
-    }
-
-    tulosEl.innerHTML = '<div class="testaaja-pieni">Lasketaan paras jako...</div>';
-
-    const testiviikot = muodostaTestiViikot(alkuviikko, loppuviikko);
-    const ehdotukset = generoiKiertoEhdotukset(kierto, opettajat);
-
-    let paras = null;
-    let parasArvio = null;
-
-    ehdotukset.forEach(ehdotus => {
-        const arvio = arvioiKiertoEhdotusViikoilla(kierto, ehdotus, testiviikot);
-
-        if (!parasArvio || arvio.pisteet < parasArvio.pisteet) {
-            paras = ehdotus;
-            parasArvio = arvio;
-        }
-    });
-
-    naytaKiertotestaajanTulos(
-        kierto,
-        opettajat,
-        parasArvio,
-        paras,
-        ehdotukset.length,
-        alkuviikko,
-        loppuviikko
-    );
-}
 
         let resizeTimer = null;
         function debounceRender() {
