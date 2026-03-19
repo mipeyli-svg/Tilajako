@@ -797,25 +797,27 @@
         ============================================================
         */
         const YLLAPITO_ASETUKSET = {
-            sheetUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRNc9D23NHyoU0H5tLM86bd5w-7E318BH0RLa3SLcgy1xmkENyDY6yCliA64Iyagsff6SYAFAwlQKfp/pub?output=csv',
-            appsScriptUrl: 'https://script.google.com/macros/s/AKfycbxRcsUQgKssU27zklP9AwoCPHtGAO9VBzPBoCVGOcHxKlWZ4lApwzTfDZmJmaCFjNE9/exec',
-            opettajat: ['Mypi', 'Hanna', 'Päivi', 'Jenni', 'Tuomas'],
-            aloitusViikko: 48,
-            lukuvuodenAloitusKuukausiPaiva: '11-24',
-            eiKierraViikot: [42, 8],
-            lomat: {
-                syyslomaViikot: [42],
-                hiihtolomaViikot: [8],
-                joululoma: { alkaa: '12-21', loppuu: '01-06', nimi: 'Joululoma' }
-            },
-            lahtoTilat: {
-                2: ['Yläsali', 'Yläsali', 'Alasali', 'Yläsali', 'Alasali'],
-                3: ['Muualla', 'Alasali', 'Yläsali', 'Yläsali', 'Muualla'],
-                4: ['Muualla 1', 'Alasali', 'Alasali', 'Yläsali', 'Muualla 2']
-            }
-        };
+    sheetUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRNc9D23NHyoU0H5tLM86bd5w-7E318BH0RLa3SLcgy1xmkENyDY6yCliA64Iyagsff6SYAFAwlQKfp/pub?output=csv',
+    appsScriptUrl: 'https://script.google.com/macros/s/AKfycbxRcsUQgKssU27zklP9AwoCPHtGAO9VBzPBoCVGOcHxKlWZ4lApwzTfDZmJmaCFjNE9/exec',
+    adminKey: 'IsopahaSusi1962%!!',
+    opettajat: ['Mypi', 'Hanna', 'Päivi', 'Jenni', 'Tuomas'],
+    aloitusViikko: 48,
+    lukuvuodenAloitusKuukausiPaiva: '11-24',
+    eiKierraViikot: [42, 8],
+    lomat: {
+        syyslomaViikot: [42],
+        hiihtolomaViikot: [8],
+        joululoma: { alkaa: '12-21', loppuu: '01-06', nimi: 'Joululoma' }
+    },
+    lahtoTilat: {
+        2: ['Yläsali', 'Yläsali', 'Alasali', 'Yläsali', 'Alasali'],
+        3: ['Muualla', 'Alasali', 'Yläsali', 'Yläsali', 'Muualla'],
+        4: ['Muualla 1', 'Alasali', 'Alasali', 'Yläsali', 'Muualla 2']
+    }
+};
 
         const sheetUrl = YLLAPITO_ASETUKSET.sheetUrl;
+        const adminKey = YLLAPITO_ASETUKSET.adminKey;
         const appsScriptUrl = YLLAPITO_ASETUKSET.appsScriptUrl;
         const ASETUKSET = YLLAPITO_ASETUKSET;
 
@@ -1281,7 +1283,12 @@
                 peruutaNappi.disabled = true;
                 tallennaNappi.textContent = 'Tallennetaan...';
 
-                const payload = { action: 'saveOverride', ...aktiivinenMuokkaus, korvaava_tila: uusiTila };
+                const payload = {
+    action: 'saveOverride',
+    adminKey,
+    ...aktiivinenMuokkaus,
+    korvaava_tila: uusiTila
+};
                 const response = await fetch(appsScriptUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -1326,7 +1333,11 @@
                 peruutaNappi.disabled = true;
                 palautaNappi.textContent = 'Palautetaan...';
 
-                const payload = { action: 'clearOverride', ...aktiivinenMuokkaus };
+                const payload = {
+    action: 'clearOverride',
+    adminKey,
+    ...aktiivinenMuokkaus
+};
                 const response = await fetch(appsScriptUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -2108,8 +2119,9 @@
             if (!ok) return;
 
             const payload = {
-                action: 'saveMultipleOverrides',
-                items: valitut.map(tunti => ({
+    action: 'saveMultipleOverrides',
+    adminKey,
+    items: valitut.map(tunti => ({
                     viikko: viikkoNumero,
                     paiva: tunti.paiva,
                     alku: tunti.alku,
