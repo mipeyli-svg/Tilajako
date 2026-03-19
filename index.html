@@ -776,6 +776,26 @@
 
     <script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
     <script>
+           /*
+        ============================================================
+        YLLÄPITOASETUKSET – MUOKKAA VAIN TÄTÄ BLOKKIA TARVITTAESSA
+        ============================================================
+
+        1) sheetUrl = julkaistu CSV-linkki
+        2) appsScriptUrl = Apps Script web app /exec -osoite
+        3) opettajat = nimet täsmälleen siinä muodossa kuin Sheetissä
+        4) aloitusViikko = se viikko, josta lukuvuoden kierto alkaa
+        5) lukuvuodenAloitusKuukausiPaiva = muodossa KK-PP, esim. 08-10
+        6) eiKierraViikot = lomaviikot, joilla kierto ei etene
+        7) lahtoTilat:
+            - 2: 2-kierron opettajakohtaiset aloituspaikat
+            - 3: 3-kierron opettajakohtaiset aloituspaikat
+            - 4: 4-kierron opettajakohtaiset aloituspaikat
+
+        Opettajien järjestys ratkaisee kaiken:
+        ensimmäinen nimi vastaa aina ensimmäistä paikkaa, toinen toista jne.
+        ============================================================
+        */
         const YLLAPITO_ASETUKSET = {
             sheetUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRNc9D23NHyoU0H5tLM86bd5w-7E318BH0RLa3SLcgy1xmkENyDY6yCliA64Iyagsff6SYAFAwlQKfp/pub?output=csv',
             appsScriptUrl: 'https://script.google.com/macros/s/AKfycbzV0h8icVctrXg9ykg83eaukyZZJauOEXiHBbapCV5PoUUtHwtpj-yuleowVtGnuoUO/exec',
@@ -789,7 +809,7 @@
                 joululoma: { alkaa: '12-21', loppuu: '01-06', nimi: 'Joululoma' }
             },
             lahtoTilat: {
-                2: ['Yläsali', 'Alasali', 'Alasali', 'Yläsali', 'Alasali'],
+                2: ['Yläsali', 'Yläsali', 'Alasali', 'Yläsali', 'Alasali'],
                 3: ['Muualla', 'Alasali', 'Yläsali', 'Yläsali', 'Muualla'],
                 4: ['Muualla 1', 'Alasali', 'Alasali', 'Yläsali', 'Muualla 2']
             }
